@@ -88,9 +88,15 @@ add_executable(test main.cpp)
 target_link_libraries(test PRIVATE standalone_cxx)
 ```
 
-As shown above, you start with defining your CMake minimum version, as well as the name of your project and its type (which is CXX for C++). From there you locate the standalone_cxx package. Assuming you have compiled the standalone_cxx project, CMake should be able to automatically locate the resulting package for you. Finally, you must create an executable from your C++ code and link it to the standalone_cxx interface library, which contains all of the required includes, libraries and compiler settings for the project. Feel free to add your own as well. Note that some C++ flags like `-mno-red-zone` need to be included when compiling the standalone_cxx project itself which can be done on the command line, and once included, the flags will be included in the resulting interface library so you do not need to include them in your project again. 
+As shown above, you start with defining your CMake minimum version, as well as the name of your project and its type (which is CXX for C++). From there you locate the standalone_cxx package. Assuming you have compiled the standalone_cxx project, CMake should be able to automatically locate (using some voodoo black magic) the resulting standalone_cxx package for you. Finally, you must create an executable from your C++ code and link it to the standalone_cxx interface library, which contains all of the required includes, libraries and compiler settings for the project. Feel free to add your own as well. Note that some C++ flags like `-mno-red-zone` need to be included when compiling the standalone_cxx project itself which can be done on the command line, and once included, the flags will be included in the resulting interface library so you do not need to include them in your project again. 
 
-Once you have your source and build scripts complete, you can compile your application using the normal `cmake .; make` commands. 
+Once you have your source and build scripts complete, you can compile your application using the following:
+```
+cmake -DCMAKE_TOOLCHAIN_FILE=<path> .
+make -j<# cores>
+```
+
+The toolchain file is needed because the C++ application will technically be cross-compiled (although the target archiecture is likely the same). This provides us with the ability to define how the C++ application compiled using clang, something the interface library feature in CMake currently doesn't support. Supported toolchains can be found [here](https://github.com/Bareflank/standalone_cxx/tree/master/cmake/toolchain), but you can always write your own as well. 
 
 ### The Loader
 
