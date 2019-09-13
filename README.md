@@ -232,5 +232,5 @@ That's it! That is all you need to run C++ from anywhere.
 
 ## License
 
-The Bareflank Hypervisor is licensed under the MIT License.
+Standalone C++ is licensed under the MIT License. This library relies on Libc++, LLVM, Newlib and GNU-EFI which all have their own software license as well. 
 
