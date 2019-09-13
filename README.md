@@ -11,21 +11,19 @@ To compile Standalone C++, you must first install the following on your system (
 
 ### Arch Linux
 
-```
+```bash
 sudo pacman -S git base-devel clang cmake
 ```
 
 ### Ubuntu 19.04 (or Higher):
 
-```
+```bash
 sudo apt-get install git build-essential clang cmake
 ```
 
 ### Windows 10
 
-```
 TBD
-```
 
 ## Compilation and Testing
 
@@ -34,7 +32,7 @@ and a [loader](https://github.com/Bareflank/standalone_cxx/tree/master/examples/
 
 ### Linux
 
-```
+```bash
 cd $HOME
 
 mkdir working
@@ -91,7 +89,7 @@ target_link_libraries(test PRIVATE standalone_cxx)
 As shown above, you start with defining your CMake minimum version, as well as the name of your project and its type (which is CXX for C++). From there you locate the standalone_cxx package. Assuming you have compiled the standalone_cxx project, CMake should be able to automatically locate (using some voodoo black magic) the resulting standalone_cxx package for you. Finally, you must create an executable from your C++ code and link it to the standalone_cxx interface library, which contains all of the required includes, libraries and compiler settings for the project. Feel free to add your own as well. Note that some C++ flags like `-mno-red-zone` need to be included when compiling the standalone_cxx project itself which can be done on the command line, and once included, the flags will be included in the resulting interface library so you do not need to include them in your project again. 
 
 Once you have your source and build scripts complete, you can compile your application using the following:
-```
+```cmake
 cmake -DCMAKE_TOOLCHAIN_FILE=<path> .
 make -j<# cores>
 ```
@@ -223,7 +221,7 @@ struct bfexec_funcs_t funcs = {
 ```
 
 If you don't have a mark_rx or syscall function, just use NULL instead. The last step is to execute our C++ application as follows:
-```
+```c
 EFI_STATUS
 efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
