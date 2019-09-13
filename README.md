@@ -94,7 +94,7 @@ Once you have your source and build scripts complete, you can compile your appli
 
 ### The Loader
 
-Although the C++ application that you just wrote above is compiled from a freestanding (i.e., compiled with `-ffreestanding`), we still need a way to execute the C++ application from a freestanding environment. To do this, we must load the C++ application into our environment and then execute it. This extra step is needed because unlike C, which can be compiled into a flat binary and executed directly (mostly), C++ relies on several tables of information that are external to the executable code, something C does not rely on. These extra tables include the exception tables, init/fini routines for global construction and thread local storage (TLS). 
+Although the C++ application that you just wrote above is compiled from a freestanding environment (i.e., compiled with `-ffreestanding`), we still need a way to execute the C++ application from a freestanding environment. To do this, we must load the C++ application into our environment and then execute it. This extra step is needed because unlike C, which can be compiled into a flat binary and executed directly (mostly), C++ relies on several tables of information that are external to the executable code, something C does not rely on. These extra tables include the exception tables, init/fini routines for global construction and thread local storage (TLS). 
 
 To create the loader, we first need to include some headers (in this example we will use UEFI):
 
@@ -226,7 +226,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 }
 ```
 
-The bfexec() function takes a pointer to the C++ application you wish to execute. This could be a buffer you allocate and load with the C++ application from disk, or it could be a pointer to an array that has the C++ application pre-populated as we do using `xxd`. Finally the bfexec takes the size (in bytes) of the C++ application and a pointer to our helper functions, returning the results of the main() function in your C++ application. 
+The `bfexec()` function takes a pointer to the C++ application you wish to execute. This could be a buffer you allocate and load with the C++ application from disk, or it could be a pointer to an array that has the C++ application pre-populated as we do using `xxd`. Finally the bfexec takes the size (in bytes) of the C++ application and a pointer to our helper functions, returning the results of the main() function in your C++ application. 
 
 That's it! That is all you need to run C++ from anywhere. 
 
