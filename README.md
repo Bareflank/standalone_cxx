@@ -94,7 +94,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=<path> .
 make -j<# cores>
 ```
 
-The toolchain file is needed because the C++ application will technically be cross-compiled (although the target archiecture is likely the same). This provides us with the ability to define how the C++ application compiled using clang, something the interface library feature in CMake currently doesn't support. Supported toolchains can be found [here](https://github.com/Bareflank/standalone_cxx/tree/master/cmake/toolchain), but you can always write your own as well. 
+The toolchain file is needed because the C++ application will technically be cross-compiled (although the target archiecture is likely the same). This provides us with the ability to define how the C++ application is compiled using clang, something the interface library feature in CMake currently doesn't support. Supported toolchains can be found [here](https://github.com/Bareflank/standalone_cxx/tree/master/cmake/toolchain), but you can always write your own as well. 
 
 ### The Loader
 
