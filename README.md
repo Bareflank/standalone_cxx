@@ -226,7 +226,7 @@ EFI_STATUS
 efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
     InitializeLib(image, systab);
-    return bfexec((char *)cxx_uefi, cxx_uefi_len, &funcs);
+    return bfexec(cxx_uefi, cxx_uefi_len, &funcs);
 }
 ```
 
