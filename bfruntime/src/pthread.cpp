@@ -170,7 +170,7 @@ pthread_getspecific(pthread_key_t __key)
         return nullptr;
     }
 
-    return reinterpret_cast<void *>(thread_context_tlsptr()[__key]);
+    return reinterpret_cast<void *>(thread_local_storage_ptr()[__key]);
 }
 
 extern "C" int
@@ -316,7 +316,7 @@ pthread_setspecific(pthread_key_t __key, const void *__value)
         return -EINVAL;
     }
 
-    thread_context_tlsptr()[__key] = reinterpret_cast<uint64_t>(__value);
+    thread_local_storage_ptr()[__key] = reinterpret_cast<uint64_t>(__value);
     return 0;
 }
 

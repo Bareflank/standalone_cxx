@@ -50,7 +50,7 @@ extern "C" WEAK_SYM int
 open(const char *file, int oflag, ...)
 {
     struct bfsyscall_open_args args = {
-        file, oflag, ENOSYS, -1
+        file, oflag, EINVAL, -1
     };
 
     bfsyscall(BFSYSCALL_OPEN, &args);
@@ -66,7 +66,7 @@ extern "C" WEAK_SYM int
 close(int fd)
 {
     struct bfsyscall_close_args args = {
-        fd, ENOSYS, -1
+        fd, EINVAL, -1
     };
 
     bfsyscall(BFSYSCALL_CLOSE, &args);
@@ -82,7 +82,7 @@ extern "C" WEAK_SYM _READ_WRITE_RETURN_TYPE
 write(int fd, const void *buf, size_t nbyte)
 {
     struct bfsyscall_write_args args = {
-        fd, buf, nbyte, ENOSYS, 0
+        fd, buf, nbyte, EINVAL, 0
     };
 
     bfsyscall(BFSYSCALL_WRITE, &args);
@@ -98,7 +98,7 @@ extern "C" WEAK_SYM _READ_WRITE_RETURN_TYPE
 read(int fd, void *buf, size_t nbyte)
 {
     struct bfsyscall_read_args args = {
-        fd, buf, nbyte, ENOSYS, 0
+        fd, buf, nbyte, EINVAL, 0
     };
 
     bfsyscall(BFSYSCALL_READ, &args);
@@ -114,7 +114,7 @@ extern "C" WEAK_SYM int
 fstat(int fd, struct stat *sbuf)
 {
     struct bfsyscall_fstat_args args = {
-        fd, sbuf, ENOSYS, -1
+        fd, sbuf, EINVAL, -1
     };
 
     bfsyscall(BFSYSCALL_FSTAT, &args);
@@ -130,7 +130,7 @@ extern "C" WEAK_SYM int
 lseek(int fd, int offset, int whence)
 {
     struct bfsyscall_lseek_args args = {
-        fd, offset, whence, ENOSYS, -1
+        fd, offset, whence, EINVAL, -1
     };
 
     bfsyscall(BFSYSCALL_LSEEK, &args);
@@ -146,7 +146,7 @@ extern "C" WEAK_SYM int
 isatty(int fd)
 {
     struct bfsyscall_isatty_args args = {
-        fd, ENOSYS, 0
+        fd, EINVAL, 0
     };
 
     bfsyscall(BFSYSCALL_ISATTY, &args);
@@ -172,23 +172,8 @@ kill(int _pid, int _sig)
     bfignored(_pid);
     bfignored(_sig);
 
-    errno = -ENOSYS;
+    errno = -EINVAL;
     return -1;
-}
-
-//------------------------------------------------------------------------------
-// Exit
-//------------------------------------------------------------------------------
-
-extern "C" WEAK_SYM void
-_exit(int status)
-{
-    struct bfsyscall_exit_args args = {
-        status
-    };
-
-    bfsyscall(BFSYSCALL_EXIT, &args);
-    while(1) {}
 }
 
 //------------------------------------------------------------------------------
@@ -231,4 +216,29 @@ posix_memalign(void **memptr, size_t alignment, size_t size)
     }
 
     return ENOMEM;
+}
+
+//------------------------------------------------------------------------------
+// TODO
+//------------------------------------------------------------------------------
+
+extern "C" WEAK_SYM long
+sysconf(int name)
+{
+    errno = -EINVAL;
+    return -1;
+}
+
+extern "C" WEAK_SYM int
+sched_yield(void)
+{
+    errno = -EINVAL;
+    return -1;
+}
+
+extern "C" WEAK_SYM int
+nanosleep(const struct timespec *req, struct timespec *rem)
+{
+    errno = -EINVAL;
+    return -1;
 }

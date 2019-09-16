@@ -158,15 +158,6 @@ struct bfsyscall_isatty_args
     int ret;
 };
 
-#define BFSYSCALL_EXIT 0xBFCA110000000010
-struct bfsyscall_exit_args
-{
-    /** IN */
-    int status;
-
-    /** OUT */
-};
-
 /**
  * @endcond
  */

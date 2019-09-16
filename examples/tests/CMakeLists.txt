@@ -20,11 +20,17 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.13)
-project(test CXX)
+project(tests CXX)
 
 find_package(standalone_cxx)
 
-add_executable(test main.cpp)
-target_link_libraries(test PRIVATE standalone_cxx)
+function(compile_test_case name)
+    add_executable(${name} ${name}.cpp)
+    target_link_libraries(${name} PRIVATE standalone_cxx)
+    install(TARGETS ${name} DESTINATION bin)
+endfunction(compile_test_case)
 
-install(TARGETS test DESTINATION bin)
+compile_test_case(empty)
+compile_test_case(hello_bareflank)
+compile_test_case(hello_world_printf)
+compile_test_case(hello_world)

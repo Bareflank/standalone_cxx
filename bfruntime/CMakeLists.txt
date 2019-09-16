@@ -22,32 +22,21 @@ project(bfruntime CXX ASM)
 set(INTEL_X64 $<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},x86_64>)
 
 # -----------------------------------------------------------------------------
-# bfdso
+# source
 # -----------------------------------------------------------------------------
 
-add_library(bfdso
-    src/dso/dso.cpp
+add_library(bfruntime
+    src/dso.cpp
+    src/crt.cpp
+    src/pthread.cpp
+    src/syscalls.cpp
+    $<${INTEL_X64}:src/arch/x64/sp.S>
+    $<${INTEL_X64}:src/arch/x64/start.S>
+    $<${INTEL_X64}:src/arch/x64/syscall.S>
 )
 
 # -----------------------------------------------------------------------------
-# bfpthread
-# -----------------------------------------------------------------------------
-
-add_library(bfpthread
-    src/pthread/pthread.cpp
-)
-
-# -----------------------------------------------------------------------------
-# bfsyscall
-# -----------------------------------------------------------------------------
-
-add_library(bfsyscall
-    src/syscall/syscalls.cpp
-    $<${INTEL_X64}:src/syscall/arch/x64/syscall.S>
-)
-
-# -----------------------------------------------------------------------------
-# bfcrt
+# quirks
 # -----------------------------------------------------------------------------
 
 # There is a chicken/egg issue with the CRT. It cannot have the stack
@@ -55,18 +44,10 @@ add_library(bfsyscall
 # up in a scenario where it tries to protect itself before it is setup
 # resulting in a false positive fail.
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
-
-add_library(bfcrt
-    src/crt/crt.cpp
-    $<${INTEL_X64}:src/crt/arch/x64/start.S>
-)
+target_compile_options(bfruntime PRIVATE -fno-stack-protector)
 
 # -----------------------------------------------------------------------------
 # installs
 # -----------------------------------------------------------------------------
 
-install(TARGETS bfdso DESTINATION lib)
-install(TARGETS bfpthread DESTINATION lib)
-install(TARGETS bfsyscall DESTINATION lib)
-install(TARGETS bfcrt DESTINATION lib)
+install(TARGETS bfruntime DESTINATION lib)

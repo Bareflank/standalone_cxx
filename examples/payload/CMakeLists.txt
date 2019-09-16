@@ -25,7 +25,7 @@ project(payload C ASM)
 find_package(standalone_cxx_sdk)
 
 add_executable(payload payload.S payload.c)
-target_compile_definitions(payload PRIVATE FILENAME="${TEST_PATH}")
+target_compile_definitions(payload PRIVATE FILENAME="${CXX_PAYLOAD_PATH}")
 target_link_libraries(payload PRIVATE standalone_cxx_sdk)
 target_include_directories(payload SYSTEM PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
 

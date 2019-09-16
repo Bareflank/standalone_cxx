@@ -91,6 +91,8 @@ int main(int argc, char *argv[])
         throw std::runtime_error("wrong number of arguments");
     }
 
+    std::cout << &buffer1 << '\n';
+
     auto [file1, file1_size, file1_fd] = map_file(argv[1]);
     memcpy(buffer1, file1, file1_size);
 

@@ -23,14 +23,6 @@
 #ifndef BFTYPES_H
 #define BFTYPES_H
 
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC system_header
-#endif
-
-#ifdef __cplusplus
-#include <type_traits>
-#endif
-
 /* -------------------------------------------------------------------------- */
 /* Helper Macros                                                              */
 /* -------------------------------------------------------------------------- */

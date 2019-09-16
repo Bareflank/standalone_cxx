@@ -240,6 +240,7 @@ function(add_subproject NAME SOURCE)
         "-isystem ${CMAKE_INSTALL_PREFIX}/include/c++/v1 "
         "-isystem ${CMAKE_INSTALL_PREFIX}/include "
         "-isystem ${CMAKE_INSTALL_PREFIX}/include/bfsdk "
+        "-isystem ${CMAKE_INSTALL_PREFIX}/include/bfelf_loader "
     )
 
     list(APPEND ARGN
@@ -292,6 +293,8 @@ function(setup_interfaces)
 
     target_link_options(standalone_cxx INTERFACE
         ${CMAKE_CXX_LINK_FLAGS}
+        -L${CMAKE_INSTALL_PREFIX}/lib
+        -lbfruntime
     )
 
     target_include_directories(standalone_cxx INTERFACE
@@ -307,23 +310,22 @@ function(setup_interfaces)
     )
 
     target_link_libraries(standalone_cxx INTERFACE
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfcrt.a
         ${CMAKE_INSTALL_PREFIX}/lib/libc++.a
         ${CMAKE_INSTALL_PREFIX}/lib/libc++abi.a
         ${CMAKE_INSTALL_PREFIX}/lib/libbfunwind.a
         ${CMAKE_INSTALL_PREFIX}/lib/libc.a
         ${CMAKE_INSTALL_PREFIX}/lib/libm.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfdso.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfpthread.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfsyscall.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfsdk.a
-    )
-
-    target_link_libraries(standalone_cxx_sdk INTERFACE
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfsdk.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libbfruntime.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libc++.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libc++abi.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libbfunwind.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libc.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libm.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libbfruntime.a
     )
 
     target_compile_definitions(standalone_cxx_sdk INTERFACE
+        BFHEAP_SIZE=${HEAP_SIZE}
         BFSTACK_SIZE=${STACK_SIZE}
     )
 

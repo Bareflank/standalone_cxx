@@ -26,7 +26,7 @@ find_package(standalone_cxx_sdk)
 
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/cxx_uefi.h
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_INSTALL_PREFIX}/bin/test cxx_uefi
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank cxx_uefi
     COMMAND xxd -i cxx_uefi > ${CMAKE_INSTALL_PREFIX}/include/efi/cxx_uefi.h
 )
 

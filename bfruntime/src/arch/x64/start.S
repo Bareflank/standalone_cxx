@@ -23,8 +23,51 @@
     .code64
     .intel_syntax noprefix
 
-    .globl  _thread_context_get_sp
-    .type   _thread_context_get_sp, @function
-_thread_context_get_sp:
-    mov rax, rsp
+    .globl  _start
+    .type   _start, @function
+_start:
+
+    push rbx
+    push rsi
+    push rdi
+    push r12
+    push r13
+    push r14
+    push r15
+
+    push rbp
+    mov rbp, rsp
+
+    mov rsp, rdi
+    mov r12, rsi
+
+    mov rdi, rbp
+    call _set_original_sp
+
+    mov rdi, r12
+    call _start_c
+
+    /* Only needed for debugging */
+    mov rdi, rax
+
+    .globl  _exit
+    .type   _exit, @function
+_exit:
+
+    mov r12, rdi
+
+    call _get_original_sp
+    mov rsp, rax
+
+    mov rax, r12
+
+    pop rbp
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rdi
+    pop rsi
+    pop rbx
+
     ret

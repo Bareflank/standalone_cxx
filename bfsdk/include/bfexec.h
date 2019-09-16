@@ -35,9 +35,9 @@
 /**
  * Platform Functions
  *
- * @var bfexec_funcs_t::alloc
+ * @var bfexec_funcs_t::alloc (required)
  *     a pointer to an the alloc function used by bfexec
- * @var bfexec_funcs_t::free
+ * @var bfexec_funcs_t::free (optional)
  *     a pointer to an the free function used by bfexec
  * @var bfexec_funcs_t::mark_rx (optional)
  *     a pointer to an the mark_rx function used by bfexec
@@ -101,17 +101,12 @@ bfexecs(struct bfelf_file_t *ef, struct _start_args_t *_start_args)
         return BFFAILURE;
     }
 
-    if (_start_args->request == 0 || _start_args->request == BFMAIN_REQUEST_INIT) {
-        _start_args->eh_frame_addr = ef->eh_frame_addr;
-        _start_args->eh_frame_size = ef->eh_frame_size;
-        _start_args->init_array_addr = ef->init_array_addr;
-        _start_args->init_array_size = ef->init_array_size;
-    }
-
-    if (_start_args->request == 0 || _start_args->request == BFMAIN_REQUEST_FINI) {
-        _start_args->fini_array_addr = ef->fini_array_addr;
-        _start_args->fini_array_size = ef->fini_array_size;
-    }
+    _start_args->eh_frame_addr = ef->eh_frame_addr;
+    _start_args->eh_frame_size = ef->eh_frame_size;
+    _start_args->init_array_addr = ef->init_array_addr;
+    _start_args->init_array_size = ef->init_array_size;
+    _start_args->fini_array_addr = ef->fini_array_addr;
+    _start_args->fini_array_size = ef->fini_array_size;
 
     sp = setup_stack(
         _start_args->stack, _start_args->thread_id, _start_args->tls
@@ -193,11 +188,6 @@ bfexecv(
         return BFFAILURE;
     }
 
-    if (funcs->free == nullptr) {
-        BFALERT("bfexec failed: invalid funcs->free pointer\n");
-        return BFFAILURE;
-    }
-
     ret = bfelf_file_init(file, size, &ef);
     if (ret != BFSUCCESS) {
         BFALERT("bfexec failed: failed to init ELF file\n");
@@ -220,7 +210,7 @@ bfexecv(
     _start_args.argv = argv;
     _start_args.syscall_func = funcs->syscall;
 
-    _start_args.stack = funcs->alloc(stack_size());
+    _start_args.stack = funcs->alloc(__stack_size());
     if (_start_args.stack == nullptr) {
         BFALERT("bfexec failed: failed to allocate stack\n");
         goto release;
@@ -236,9 +226,11 @@ bfexecv(
 
 release:
 
-    funcs->free(_start_args.exec, ef.size);
-    funcs->free(_start_args.stack, stack_size());
-    funcs->free(_start_args.tls, BFTLS_SIZE);
+    if (funcs->free != nullptr) {
+        funcs->free(_start_args.exec, ef.size);
+        funcs->free(_start_args.stack, __stack_size());
+        funcs->free(_start_args.tls, BFTLS_SIZE);
+    }
 
     return ret;
 }

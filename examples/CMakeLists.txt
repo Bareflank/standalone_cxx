@@ -118,7 +118,7 @@ list(APPEND PAYLOAD_CXX_ARGN
     CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
     CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
     CMAKE_ARGS -DCMAKE_BUILD_TYPE=MinSizeRel
-    CMAKE_ARGS -DTEST_PATH=${CMAKE_INSTALL_PREFIX}/bin/test
+    CMAKE_ARGS -DCXX_PAYLOAD_PATH=${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank
 )
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
@@ -212,7 +212,19 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/bin/test.txt "The answer is: 42\n")
 
 add_custom_target(
     quick
-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader ${CMAKE_INSTALL_PREFIX}/bin/test
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader ${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank
+    USES_TERMINAL
+)
+
+add_custom_target(
+    hello_world
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader ${CMAKE_INSTALL_PREFIX}/bin/hello_world
+    USES_TERMINAL
+)
+
+add_custom_target(
+    hello_world_printf
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader ${CMAKE_INSTALL_PREFIX}/bin/hello_world_printf
     USES_TERMINAL
 )
 

@@ -113,15 +113,5 @@ EFI_STATUS
 efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
     InitializeLib(image, systab);
-
-    Print(L"\n");
-    Print(L"  ___                __ _           _   \n");
-    Print(L" | _ ) __ _ _ _ ___ / _| |__ _ _ _ | |__\n");
-    Print(L" | _ \\/ _` | '_/ -_)  _| / _` | ' \\| / /\n");
-    Print(L" |___/\\__,_|_| \\___|_| |_\\__,_|_||_|_\\_\\\n");
-    Print(L"\n");
-    Print(L" Please give us a star on: https://github.com/Bareflank/standalone_cxx\n");
-    Print(L"\n");
-
-    return bfexec((char *)cxx_uefi, cxx_uefi_len, &funcs);
+    return bfexec(cxx_uefi, cxx_uefi_len, &funcs);
 }

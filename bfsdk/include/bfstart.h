@@ -32,9 +32,6 @@
 
 #pragma pack(push, 1)
 
-#define BFMAIN_REQUEST_INIT 0xBF00000000000001
-#define BFMAIN_REQUEST_FINI 0xBF00000000000002
-
 /**
  * @struct _start_args_t
  *
@@ -56,12 +53,6 @@
  *      main()'s argc
  * @var section_info_t::argv (only valid when request == 0)
  *      main()'s argv
- * @var section_info_t::request
- *      bfmain()'s request id
- * @var section_info_t::arg1
- *      bfmain()'s arg1
- * @var section_info_t::arg2
- *      bfmain()'s arg2
  * @var section_info_t::exec
  *      a pointer to the executable memory for the application itself.
  * @var section_info_t::stack
@@ -82,9 +73,6 @@ struct _start_args_t {
     uint64_t fini_array_size;
     int32_t argc;
     char **argv;
-    uint64_t request;
-    uint64_t arg1;
-    uint64_t arg2;
     void *exec;
     void *stack;
     void *tls;

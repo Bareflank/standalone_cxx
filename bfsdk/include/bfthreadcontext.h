@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-uint64_t _thread_context_get_sp(void) NOEXCEPT;
+uint64_t _sp(void) NOEXCEPT;
 
 #ifdef __cplusplus
 }
@@ -66,14 +66,17 @@ uint64_t _thread_context_get_sp(void) NOEXCEPT;
  *      the TLS pointer of the thread
  * @var thread_context_t::id
  *      the id of the thread
+ * @var thread_context_t::original_sp
+ *      the original stack pointer
  * @var thread_context_t::reserved
  *      reserved
  */
 struct thread_context_t {
     uint64_t canary;
-    void *tlsptr;
-    uint64_t id;
-    uint64_t reserved[5];
+    uint64_t *tlsptr;
+    uint64_t thread_id;
+    uint64_t original_sp;
+    uint64_t reserved[4];
 };
 
 #ifdef __cplusplus
@@ -81,51 +84,32 @@ static_assert(sizeof(struct thread_context_t) == 64);
 #endif
 
 /**
- * Stack Size
- *
- * The stack is always 2* the stack size that is provided by the compiler.
- * This is needed to ensure that we can create aligned memory that is
- * aligned to the size of the stack, which is needed to calculate the location
- * of the thread context block.
- *
+ * @cond
  */
+
 static inline uint64_t
-stack_size(void) NOEXCEPT
+__stack_size(void) NOEXCEPT
 { return BFSTACK_SIZE * 2; }
 
-/**
- * Top Of Stack
- *
- * This function returns the top of the stack given a stack pointer. Note
- * that if this function is called from the thread itself, 0 should be passed
- * to this function so that it can fetch the current stack pointer of the
- * thread. If this function is called from the loader, the stack pointer that
- * is provided should be the pointer you get when allocating the stack
- * itself.
- *
- * @param sp the stack pointer
- * @return returns the top of the stack given a stack pointer
- */
 static inline uint64_t
-thread_context_top_of_stack(uint64_t sp)
-{
-    if (sp == 0) {
-        return (_thread_context_get_sp() + BFSTACK_SIZE) & ~(BFSTACK_SIZE - 1);
-    }
-    else {
-        return (sp + stack_size()) & ~(BFSTACK_SIZE - 1);
-    }
-}
+__tc_tos(uint64_t sp)
+{ return (sp + __stack_size()) & ~(BFSTACK_SIZE - 1); }
+
+static inline uint64_t
+__tc_bos(uint64_t sp)
+{ return __tc_tos(sp) - BFSTACK_SIZE; }
+
+static inline uint64_t
+__tc_tocs()
+{ return (_sp() + BFSTACK_SIZE) & ~(BFSTACK_SIZE - 1); }
+
+static inline uint64_t
+__tc_bocs()
+{ return __tc_tocs() - BFSTACK_SIZE; }
 
 /**
- * Bottom Of Stack
- *
- * @param sp the stack pointer
- * @return returns the bottom of the stack given a stack pointer
+ * @endcond
  */
-static inline uint64_t
-thread_context_bottom_of_stack(uint64_t sp)
-{ return thread_context_top_of_stack(sp) - BFSTACK_SIZE; }
 
 /**
  * Thread Context Pointer
@@ -134,8 +118,8 @@ thread_context_bottom_of_stack(uint64_t sp)
  * @return returns a pointer to the thread context structure given a stack ptr
  */
 static inline struct thread_context_t *
-thread_context_ptr(uint64_t sp)
-{ return BFRCAST(struct thread_context_t *, thread_context_top_of_stack(sp) - sizeof(struct thread_context_t)); }
+thread_context_ptr(uint64_t tos)
+{ return BFRCAST(struct thread_context_t *, tos - sizeof(struct thread_context_t)); }
 
 /**
  * Thread Context ID
@@ -143,8 +127,8 @@ thread_context_ptr(uint64_t sp)
  * @return returns the current thread's ID
  */
 static inline uint64_t
-thread_context_id(void) NOEXCEPT
-{ return thread_context_ptr(0)->id; }
+thread_id(void) NOEXCEPT
+{ return thread_context_ptr(__tc_tocs())->thread_id; }
 
 /**
  * Thread Context TLS Pointer
@@ -152,8 +136,8 @@ thread_context_id(void) NOEXCEPT
  * @return returns a pointer to the current thread's TLS block
  */
 static inline uint64_t *
-thread_context_tlsptr(void) NOEXCEPT
-{ return BFRCAST(uint64_t *, thread_context_ptr(0)->tlsptr); }
+thread_local_storage_ptr(void) NOEXCEPT
+{ return thread_context_ptr(__tc_tocs())->tlsptr; }
 
 /**
  * Setup Stack
@@ -193,9 +177,9 @@ setup_stack(void *stack, uint64_t id, void *tlsptr) NOEXCEPT
      * Fill in the thread context structure. A thread can use the functions
      * defined above to get this information as needed.
      */
-    struct thread_context_t *tc = thread_context_ptr(sp);
-    tc->id = id;
-    tc->tlsptr = tlsptr;
+    struct thread_context_t *tc = thread_context_ptr(__tc_tos(sp));
+    tc->thread_id = id;
+    tc->tlsptr = BFSCAST(uint64_t *, tlsptr);
 
     /**
      * The following sets up our stack canaries. We place a canary at the top
@@ -203,7 +187,7 @@ setup_stack(void *stack, uint64_t id, void *tlsptr) NOEXCEPT
      * the stack.
      */
     tc->canary = BFCANARY;
-    BFRCAST(uint64_t *, thread_context_bottom_of_stack(sp))[0] = BFCANARY;
+    BFRCAST(uint64_t *, __tc_bos(sp))[0] = BFCANARY;
 
     /**
      * Finally we will return the location of the stack without the
@@ -230,13 +214,13 @@ static inline status_t
 validate_canaries(void *stack) NOEXCEPT
 {
     uint64_t sp = BFRCAST(uint64_t, stack);
-    struct thread_context_t *tc = thread_context_ptr(sp);
+    struct thread_context_t *tc = thread_context_ptr(__tc_tos(sp));
 
     if (tc->canary != BFCANARY) {
         return BFFAILURE;
     }
 
-    if (BFRCAST(uint64_t *, thread_context_bottom_of_stack(sp))[0] != BFCANARY) {
+    if (BFRCAST(uint64_t *, __tc_bos(sp))[0] != BFCANARY) {
         return BFFAILURE;
     }
 

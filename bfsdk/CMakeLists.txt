@@ -17,13 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 cmake_minimum_required(VERSION 3.13)
-project(bfsdk CXX ASM)
-
-set(INTEL_X64 $<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},x86_64>)
-
-add_library(bfsdk
-    $<${INTEL_X64}:src/arch/x64/threadcontext.S>
-)
+project(bfsdk)
 
 # -----------------------------------------------------------------------------
 # installs
@@ -36,5 +30,3 @@ install(FILES include/bfsyscall.h DESTINATION include/bfsdk)
 install(FILES include/bfthreadcontext.h DESTINATION include/bfsdk)
 install(FILES include/bftypes.h DESTINATION include/bfsdk)
 install(FILES include/bfweak.h DESTINATION include/bfsdk)
-
-install(TARGETS bfsdk DESTINATION lib)
