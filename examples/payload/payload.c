@@ -62,10 +62,6 @@ void *
 platform_alloc(size_t size)
 { return (void *)((uint64_t)external_malloc(size + 0x1000) & 0xFFFFFFFFFFFFF000ULL); }
 
-void
-platform_free(void *ptr, size_t size)
-{ bfignored(ptr); bfignored(size); }
-
 status_t
 platform_mark_rx(void *addr, size_t size)
 {
@@ -105,7 +101,7 @@ platform_syscall(uint64_t id, void *args)
 
 struct bfexec_funcs_t funcs = {
     platform_alloc,
-    platform_free,
+    0,
     platform_mark_rx,
     platform_syscall
 };
