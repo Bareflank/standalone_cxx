@@ -164,6 +164,7 @@ bfexecv(
     char **argv,
     struct bfexec_funcs_t *funcs)
 {
+    size_t i;
     status_t ret;
     struct bfelf_file_t ef;
     struct _start_args_t _start_args = {0};
@@ -220,6 +221,10 @@ bfexecv(
     if (_start_args.tls == nullptr) {
         BFALERT("bfexec failed: failed to allocate stack\n");
         goto release;
+    }
+
+    for (i = 0; i < BFTLS_SIZE; i++) {
+        BFSCAST(char*, _start_args.tls)[i] = 0;
     }
 
     ret = bfexecs(&ef, &_start_args);
