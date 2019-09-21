@@ -37,7 +37,9 @@ uint64_t _sp(void) NOEXCEPT;
 }
 #endif
 
-#define BFTLS_SIZE 0x1000
+#define BFTLS_ALLOC_SIZE 0x1000
+#define BFTLS_SIZE BFTLS_ALLOC_SIZE
+
 #define BFCANARY 0xBF42BF42BF42BF42
 
 /**
@@ -87,13 +89,11 @@ static_assert(sizeof(struct thread_context_t) == 64);
  * @cond
  */
 
-static inline uint64_t
-__stack_size(void) NOEXCEPT
-{ return BFSTACK_SIZE * 2; }
+#define BFSTACK_ALLOC_SIZE (BFSTACK_SIZE * 2)
 
 static inline uint64_t
 __tc_tos(uint64_t sp)
-{ return (sp + __stack_size()) & ~(BFSTACK_SIZE - 1); }
+{ return (sp + BFSTACK_ALLOC_SIZE) & ~(BFSTACK_SIZE - 1); }
 
 static inline uint64_t
 __tc_bos(uint64_t sp)

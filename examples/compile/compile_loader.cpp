@@ -19,79 +19,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <errno.h>
-#include <stdlib.h>
-
-#include <fcntl.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <tuple>
 #include <string>
-#include <iostream>
+#include <fstream>
 
-#include <bfexec.h>
-
-// -----------------------------------------------------------------------------
-// Helper Functions
-// -----------------------------------------------------------------------------
-
-void *
-platform_alloc(size_t size)
-{ return aligned_alloc(0x1000, size); }
-
-void
-platform_free(void *ptr, size_t size)
-{ bfignored(size); return free(ptr); }
-
-status_t
-platform_mark_rx(void *addr, size_t size)
-{
-    if (mprotect(addr, size, PROT_READ|PROT_EXEC) != 0) {
-        return BFFAILURE;
-    }
-
-    return BFSUCCESS;
-}
-
-void
-platform_syscall_write(bfsyscall_write_args *args)
-{
-    switch(args->fd) {
-        case STDOUT_FILENO:
-        case STDERR_FILENO:
-            errno = 0;
-            args->ret = write(args->fd, args->buf, args->nbyte);
-            args->error = errno;
-            return;
-
-        default:
-            std::cout << "yo: " << args->fd << '\n';
-            return;
-    }
-}
-
-void
-platform_syscall(uint64_t id, void *args)
-{
-    switch(id) {
-        case BFSYSCALL_WRITE:
-            return platform_syscall_write(
-                static_cast<bfsyscall_write_args *>(args));
-
-        default:
-            return;
-    }
-}
-
-bfexec_funcs_t funcs = {
-    platform_alloc,
-    platform_free,
-    platform_mark_rx,
-    platform_syscall
-};
+#include <bfelf_loader.h>
 
 // -----------------------------------------------------------------------------
 // Map File
@@ -121,19 +59,64 @@ map_file(const std::string &filename)
 }
 
 // -----------------------------------------------------------------------------
-// Implementation
+// The Guts
 // -----------------------------------------------------------------------------
 
+// Main
+//
+// Arguments
+//
+// 1: ELF file
+// 2: output file
+// 2: output file (for ELF structure)
+//
 int main(int argc, char *argv[])
 {
-    auto [file, size, fd] = map_file(argv[1]);
-
-    if (bfexec(file, size, &funcs) != BFSUCCESS) {
-        throw std::runtime_error("bfexec returned error code");
+    if (argc != 4) {
+        throw std::runtime_error("wrong number of arguments");
+        exit(1);
     }
 
-    munmap(file, size);
-    close(fd);
+    // -------------------------------------------------------------------------
+    // Map files
+
+    auto [file, file_size, file_fd] = map_file(argv[1]);
+
+    // -------------------------------------------------------------------------
+    // Convert ELF to flat binary
+
+    struct bfelf_file_t ef;
+    if (bfelf_file_init(file, &ef) != BFSUCCESS) {
+        throw std::runtime_error("failed to init the ELF file");
+    }
+
+    auto exec = new char[ef.size];
+    if (exec == nullptr) {
+        throw std::runtime_error("failed to allocate memory for the ELF file");
+    }
+
+    if (bfelf_file_load(&ef, exec, nullptr) != BFSUCCESS) {
+        throw std::runtime_error("failed to load the ELF file");
+    }
+
+    munmap(file, file_size);
+    close(file_fd);
+
+    // -------------------------------------------------------------------------
+    // Output the flat binary
+
+    if (auto stream = std::fstream(argv[2], std::fstream::out | std::fstream::binary)) {
+        stream.write(exec, ef.size);
+    }
+
+    if (auto stream = std::fstream(argv[3], std::fstream::out | std::fstream::binary)) {
+        stream.write(reinterpret_cast<char *>(&ef), sizeof(struct bfelf_file_t));
+    }
+
+    delete [] exec;
+
+    // -------------------------------------------------------------------------
+    // Done
 
     return 0;
 }

@@ -42,6 +42,10 @@
 #include <bfweak.h>
 #include <bfsyscall.h>
 
+extern uint8_t *__g_heap;
+extern uint64_t __g_heap_size;
+extern uint8_t *__g_heap_cursor;
+
 //------------------------------------------------------------------------------
 // Files
 //------------------------------------------------------------------------------
@@ -183,18 +187,15 @@ kill(int _pid, int _sig)
 extern "C" WEAK_SYM WEAK_SYM void *
 sbrk(ptrdiff_t incr)
 {
-    static uint8_t g_heap[BFHEAP_SIZE] = {};
-    static uint8_t *g_heap_cursor = g_heap;
-
-    auto cursor = g_heap_cursor;
+    auto cursor = __g_heap_cursor;
 
     if (incr != 0) {
-        if (g_heap_cursor + incr >= g_heap + BFHEAP_SIZE) {
+        if (__g_heap_cursor + incr >= __g_heap + __g_heap_size) {
             errno = ENOMEM;
             return reinterpret_cast<void *>(-1);
         }
 
-        g_heap_cursor += incr;
+        __g_heap_cursor += incr;
     }
 
     return cursor;

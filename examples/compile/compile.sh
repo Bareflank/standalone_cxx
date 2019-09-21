@@ -34,4 +34,4 @@ addr_mprotect=$(readelf -sW $filecmp | grep " mprotect\$" | awk '{print $2}')
 addr_fprintf=$(readelf -sW $filecmp | grep " fprintf\$" | awk '{print $2}')
 addr_stderr=$(readelf -sW $filecmp | grep " _IO_2_1_stderr_\$" | awk '{print $2}')
 
-eval "$compile $payload $filecmp $payload.bin $addr_open $addr_filesize $addr_filemmap $addr_exit $addr_malloc $addr_write $addr_mprotect $addr_fprintf $addr_stderr"
+eval "$compile $payload $payload.bin $addr_open $addr_filesize $addr_filemmap $addr_exit $addr_malloc $addr_write $addr_mprotect $addr_fprintf $addr_stderr"

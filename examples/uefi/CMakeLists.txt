@@ -20,32 +20,22 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.13)
-project(cxx_uefi C ASM)
+project(uefi_app C ASM)
 
 find_package(standalone_cxx_sdk)
 
-add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/cxx_uefi.h
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank cxx_uefi
-    COMMAND xxd -i cxx_uefi > ${CMAKE_INSTALL_PREFIX}/include/efi/cxx_uefi.h
-)
-
-add_custom_target(
-    cxx_uefi_xxd
-    DEPENDS ${CMAKE_BINARY_DIR}/cxx_uefi.h
-)
-
-add_library(cxx_uefi SHARED main.c)
-add_dependencies(cxx_uefi cxx_uefi_xxd)
-target_link_libraries(cxx_uefi PRIVATE standalone_cxx_sdk)
+add_library(uefi_app SHARED main.c incbin.S)
+target_link_libraries(uefi_app PRIVATE standalone_cxx_sdk)
+target_compile_definitions(uefi_app PRIVATE FILENAME="${CXX_FILE_PATH}")
+target_compile_definitions(uefi_app PRIVATE EF_FILENAME="${CXX_EF_FILE_PATH}")
 
 add_custom_command(
-    TARGET cxx_uefi
+    TARGET uefi_app
     POST_BUILD
     COMMAND ${CMAKE_OBJCOPY}
     ARGS -j .text -j .sdata -j .data -j .dynamic -j .dynsym
     ARGS -j .rel -j .rela -j .rel.* -j .rela.* -j .rel* -j .rela* -j .reloc
-    ARGS --target efi-app-x86_64 libcxx_uefi.so ${CMAKE_BINARY_DIR}/cxx_uefi.efi
+    ARGS --target efi-app-x86_64 libuefi_app.so ${CMAKE_BINARY_DIR}/uefi_app.efi
 )
 
-install(FILES ${CMAKE_BINARY_DIR}/cxx_uefi.efi DESTINATION bin)
+install(FILES ${CMAKE_BINARY_DIR}/uefi_app.efi DESTINATION bin)

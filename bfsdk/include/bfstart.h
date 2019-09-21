@@ -37,32 +37,38 @@
  *
  * Provides information needed when executing _start
  *
- * @var section_info_t::eh_frame_addr
+ * @var section_info_t::eh_frame_addr (auto filled in)
  *      the address of the eh_frame section in the ELF file
- * @var section_info_t::eh_frame_size
+ * @var section_info_t::eh_frame_size (auto filled in)
  *      the size of the eh_frame section in the ELF file
- * @var section_info_t::init_array_addr
+ * @var section_info_t::init_array_addr (auto filled in)
  *      the address of the init section in the ELF file
- * @var section_info_t::init_array_size
+ * @var section_info_t::init_array_size (auto filled in)
  *      the size of the init section in the ELF file
- * @var section_info_t::fini_array_addr
+ * @var section_info_t::fini_array_addr (auto filled in)
  *      the address of the fini section in the ELF file
- * @var section_info_t::fini_array_size
+ * @var section_info_t::fini_array_size (auto filled in)
  *      the size of the fini section in the ELF file
- * @var section_info_t::argc (only valid when request == 0)
+ * @var section_info_t::argc (optional)
  *      main()'s argc
- * @var section_info_t::argv (only valid when request == 0)
+ * @var section_info_t::argv (optional)
  *      main()'s argv
- * @var section_info_t::exec
- *      a pointer to the executable memory for the application itself.
- * @var section_info_t::stack
- *      a pointer to the stack the application will use
- * @var section_info_t::tls
+ * @var section_info_t::tls (required)
  *      a pointer to the TLS block the application will use
- * @var section_info_t::thread_id
+ * @var section_info_t::stack (required)
+ *      a pointer to the stack the application will use
+ * @var section_info_t::heap (required)
+ *      a pointer to the heap the application will use
+ * @var section_info_t::heap_size (required)
+ *      the size of the heap the application will use
+ * @var section_info_t::thread_id (default to 0)
  *      the ID of the application's thread when started (usually 0)
- * @var section_info_t::syscall_func
+ * @var section_info_t::syscall_func (optional)
  *      the syscall function to use when a syscall is made.
+ * @var section_info_t::alloc (optional)
+ *      the alloc function to use when allocating the TLS block, stack or heap
+ * @var section_info_t::free (optional)
+ *      the free function to use when freeing the TLS block, stack or heap
  */
 struct _start_args_t {
     uint64_t eh_frame_addr;
@@ -73,11 +79,14 @@ struct _start_args_t {
     uint64_t fini_array_size;
     int32_t argc;
     char **argv;
-    void *exec;
-    void *stack;
     void *tls;
+    void *stack;
+    void *heap;
+    uint64_t heap_size;
     uint64_t thread_id;
     syscall_func_t syscall_func;
+    void *(*alloc)(size_t size);
+    void (*free)(void *ptr, size_t size);
 };
 
 #ifdef __cplusplus

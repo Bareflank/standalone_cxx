@@ -19,20 +19,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.13)
-project(payload C ASM)
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
 
-find_package(standalone_cxx_sdk)
+    message(STATUS "Including dependency: catch2")
 
-add_executable(payload payload.S payload.c)
-target_compile_definitions(payload PRIVATE FILENAME="${CXX_PAYLOAD_PATH}")
-target_link_libraries(payload PRIVATE standalone_cxx_sdk)
-target_include_directories(payload SYSTEM PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
+    download_dependency(
+        catch2
+        ${CATCH2_URL}
+        ${CATCH2_URL_MD5}
+    )
 
-add_custom_command(
-    TARGET payload
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_SOURCE_DIR}/../compile/compile_payload.cpp
-)
+    list(APPEND CATCH2_CONFIGURE_FLAGS
+        -DCATCH_BUILD_TESTING=OFF
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+        -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
+        -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+        -DCMAKE_BUILD_TYPE=Debug
+    )
 
-install(TARGETS payload DESTINATION bin)
+    if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+        list(APPEND CATCH2_CONFIGURE_FLAGS
+            -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+        )
+    endif()
+
+    ExternalProject_Add(
+        catch2
+        CMAKE_ARGS  ${CATCH2_CONFIGURE_FLAGS}
+        PREFIX      ${DEPENDS_DIR}/catch2
+        STAMP_DIR   ${DEPENDS_DIR}/catch2/stamp
+        TMP_DIR     ${DEPENDS_DIR}/catch2/tmp
+        BINARY_DIR  ${DEPENDS_DIR}/catch2/build
+        LOG_DIR     ${DEPENDS_DIR}/catch2/logs
+        SOURCE_DIR  ${CACHE_DIR}/catch2
+    )
+
+endif()

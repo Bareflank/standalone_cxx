@@ -37,12 +37,9 @@
 eh_frame_t __g_eh_frame = {};
 syscall_func_t __g_syscall_func = {};
 
-// -----------------------------------------------------------------------------
-// Default Stack/TLS Blocks
-// -----------------------------------------------------------------------------
-
-uint8_t __g_stack[BFSTACK_SIZE] = {};
-uint8_t __g_tls_block[BFTLS_SIZE] = {};
+uint8_t *__g_heap = {};
+uint64_t __g_heap_size = {};
+uint8_t *__g_heap_cursor = {};
 
 // -----------------------------------------------------------------------------
 // Main Functions
@@ -82,14 +79,15 @@ _start_c(const _start_args_t *info) noexcept
 {
     using init_t = void (*)();
 
-    __g_syscall_func = {
-        info->syscall_func
-    };
-
     __g_eh_frame = {
         reinterpret_cast<void *>(info->eh_frame_addr),
         info->eh_frame_size
     };
+
+    __g_heap = static_cast<uint8_t *>(info->heap);
+    __g_heap_size = info->heap_size;
+    __g_heap_cursor = static_cast<uint8_t *>(info->heap);
+    __g_syscall_func = info->syscall_func;
 
     std::ios_base::Init mInitializer;
 

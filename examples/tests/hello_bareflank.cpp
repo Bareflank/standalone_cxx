@@ -21,6 +21,7 @@
 
 #include <array>
 #include <iostream>
+#include <stdexcept>
 
 std::array<const char *, 5> logo = {
     "  ___                __ _           _                 \n",

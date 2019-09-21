@@ -103,40 +103,44 @@ extern "C" {
  * this structure are as follows. All other fields should be ignored as they
  * are subject to change.
  *
+ * @var bfelf_file_t::exec
+ *      a ptr to the ELF executable in memory. This might be nullptr.
+ * @var bfelf_file_t::size
+ *      the size of the ELF executable in memory.
  * @var bfelf_file_t::entry
- *      the _start function for the ELF exectuable (filled by bfelf_file_load)
+ *      the _start function for the ELF exectuable
  * @var bfelf_file_t::init_array_addr
- *      the address of the init array section (filled by bfelf_file_load)
+ *      the address of the init array section
  * @var bfelf_file_t::init_array_size
- *      the size of the init array section (filled by bfelf_file_load)
+ *      the size of the init array section
  * @var bfelf_file_t::fini_array_addr
- *      the address of the fini array section (filled by bfelf_file_load)
+ *      the address of the fini array section
  * @var bfelf_file_t::fini_array_size
- *      the size of the fini array section (filled by bfelf_file_load)
+ *      the size of the fini array section
  * @var bfelf_file_t::eh_frame_addr
- *      the address of the eh_frame section (filled by bfelf_file_load)
+ *      the address of the eh_frame section
  * @var bfelf_file_t::eh_frame_size
- *      the size of the eh_frame section (filled by bfelf_file_load)
+ *      the size of the eh_frame section
  */
 
 /**
  * Initialize an ELF file
  *
- * This function initializes an ELF file structure given the file's contents
- * in memory. The resulting structure will be used by the bfelf_file_load and
- * as a result, this function must be execute prior to executing the
- * bfelf_file_load() function.
+ * This function checks to make sure the ELF file is valid and then gets the
+ * the total size of the executable memory the ELF file will need. If this
+ * function returns BFSUCCESS, use ef.size to allocate memory for the ELF file
+ * and then run bfelf_file_load() and bfelf_file_relocate() (if the ELF file
+ * was compiled with -fpie).
  *
- * After executing this function, the bfelf_file structure will have the total
- * size of the memory needed by the executable stored. Therefore, the easiest
- * way to use this API is the following:
+ * For example:
  *
  * @code
  * struct bfelf_file_t ef;
- * bfelf_file_init(file, filesz, &ef);
- * void *exec = bfelf_file_alloc(&ef, custom_alloc);
- * bfelf_file_load(exec, nullptr, &ef, nullptr);
- * custom_free(exec)
+ * bfelf_file_init(file, &ef);
+ * void *exec = malloc(ef.size);
+ * bfelf_file_load(&ef, exec, nullptr);
+ * bfelf_file_relocate(&ef, 0);
+ * free(exec);
  * @endcode
  *
  * In the example above, we initialize the ELF file and then allocate memory
@@ -150,94 +154,27 @@ extern "C" {
  * - Provide a mark_rx function to the bfelf_file_load() function which will
  *   mark the read/execute portion of the "exec" as needed. Note that on most
  *   operating systems, your custom allocation function will need to return
- *   aligned memory (the alignment depends on the CPU archiecture and OS), as
+ *   aligned memory (the alignment depends on the CPU architecture and OS), as
  *   most mprotect functions require aligned memory.
- * Finally, in our example above, we call the bfelf_file_load() function with
- * loads the ELF file. Once this is done, you are free to execute the ELF file
- * as needed. Also note that you must free the memory you allocated once you
- * the ELF file no longer needs to execute, and you are responsible for
- * handling language specific features like init/fini, exceptions, TLS, a
- * stack, etc... This library simply handles the ELF portions of the binary.
+ * Finally, in our example above, we call the bfelf_file_load() function which
+ * loads the ELF file (i.e., it puts the ELF file into the exec buffer in the
+ * right location). This function also stores some offset information for
+ * sections in the ELF file. Finally, run the bfelf_file_relocate() function if
+ * the ELF file was compiled and linked with -fpie (i.e., the resulting binary
+ * is position independent).
  *
  * @expects file != nullptr
- * @expects filesz != nullptr
  * @expects ef != nullptr
  * @ensures
  *
  * @param file a character buffer containing the contents of the ELF file to
  *     be loaded.
- * @param filesz the size of the character buffer
  * @param ef a pointer to the bfelf_file_t structure which stores information
  *     about the ELF file being loaded.
- * @return ELF_SUCCESS on success, negative on error
+ * @return BFSUCCESS on success, BFFAILURE on error
  */
 static inline status_t
-bfelf_file_init(const void *file, uint64_t filesz, struct bfelf_file_t *ef);
-
-/**
- * Allocate ELF File Memory
- *
- * This function requires that you provide it with a custom allocation
- * function. Generally speaking, this can be done as follows:
- *
- * @code
- * void *
- * custom_alloc(size_t size)
- * { return aligned_alloc(0x1000, size); }
- * @endcode
- *
- * The above example assumes that you provide the bfelf_file_load() function
- * with a custom mprotect function, and that your OS will mprotect memory with
- * a minimum alignment of 0x1000 (a 4k page). If your OS or CPU does not
- * match these assumptions, you will likely need to adjust as needed.
- *
- * For example:
- *
- * @code
- * status_t
- * custom_mprotect(void *addr, size_t size)
- * {
- *     if (mprotect(addr, size, PROT_READ|PROT_EXEC) != 0) {
- *         return BFFAILURE;
- *     }
- *
- *     return BFSUCCESS;
- * }
- * @endcode
- *
- * The custom mprotect function that is provided above can be used by the
- * bfelf_file_load() function to mark a specific portion of the allocated
- * memory to read/execute. Both the allocation and the mprotect functions
- * must corrdinate to ensure the memory that is allocated can successfully
- * be protected.
- *
- * Another approach to implementing this function would look like the
- * following:
- *
- * @code
- * void *
- * custom_alloc(size_t size)
- * {
- *     void *ptr = aligned_alloc(0x1000, size);
- *
- *     if (mprotect(ptr, size, PROT_READ|PROT_WRITE|PROT_EXEC) != 0) {
- *         free(ptr);
- *         return nullptr;
- *     }
- *
- *     return ptr;
- * }
- * @endcode
- *
- * The above example removes the need to pass a custom mprotect function to
- * the bfelf_file_load() function, but marks the entire ELF file as RWE,
- * which is typically a bad idea as this is less secure.
- *
- * @param alloc_func the custom allocation function to use
- * @return returns a pointer to the newly allocated memory, NULL on error.
- */
-static inline void *
-bfelf_file_alloc(struct bfelf_file_t *ef, void *(*alloc_func)(size_t));
+bfelf_file_init(const void *file, struct bfelf_file_t *ef);
 
 /**
  * Load an ELF file
@@ -256,34 +193,51 @@ bfelf_file_alloc(struct bfelf_file_t *ef, void *(*alloc_func)(size_t));
  * Besides providing the bfelf_file_t that was initialied using the
  * bfelf_file_init() function, this function takes some additional parameters.
  * The first, "exec" is the address to the memory that must be allocated
- * by the user. The "virt" parameter is needed because if the ELF file needs to
- * be relocated, the address that the ELF file is being relocated might not
- * be the same address as "exec". In most cases,"exec" and "virt" are the same,
- * and you can pass a nullptr and the APIs will adjust as needed. If however
- * you are using the ELF loader in a custom kernel or hypervisor, and the
- * executable will be executing with a virtual address (i.e. its own pages
- * tables) that is different from the virtual address that is being used to
- * initialize the executables memory, you must set "virt" to the starting
- * address of the executable as the executable would see it. This ensures that
- * all of the relocations are performed using the memory space the executable
- * expects to see, and not the one that was used to load the executable.
- * Finally, this function allows you to pass a mark_rx function which will be
- * called to mark a portion of the "exec" memory as read/execute. See the
- * allocation function for more information.
+ * by the user. Finally, this function allows you to pass a mark_rx function
+ * which will be called to mark a portion of the "exec" memory as read/execute.
+ * If your memory was allocated as RWE, this function is not needed and you can
+ * safely pass a nullptr instead. If your memory was allocated as RW, which is
+ * the case with malloc, you will need to pass a mark_rx function that provides
+ * the API with the ability to mark a portion of the "exec" memory as RE. If
+ * a mark_rx function is needed, you will likely need to allocate aligned
+ * memory to ensure the memory being marked is properly aligned.
  *
+ * @expects ef != nullptr
  * @expects exec != nullptr
+ * @ensures
+ *
+ * @param ef the ELF file structure to initialize.
+ * @param exec a buffer of memory the size of "ef.size" with RWE privileges.
+ * @param mark_rx a mprotect function to mark a region of memory as read/execute
+ * @return BFSUCCESS on success, BFFAILURE on error
+ */
+static inline status_t
+bfelf_file_load(struct bfelf_file_t *ef, void *exec, status_t (*mark_rx_func)(void *, size_t));
+
+/**
+ * Relocate and ELF file
+ *
+ * This function relocate the ELF file. This is only needed if the ELF file was
+ * compiled with "-fpie". There are two important notes WRT to this function:
+ * - If the virtual address that the "exec" will execute from is different than
+ *   the "exec" itself, you can provide this address and the APIs will use that
+ *   address when relocating. If they are the same, you can just pass 0.
+ * - This function can be executed by both the loader and the runtime. That is,
+ *   you can run this from the exec itself, prior to entering the ELF file.
+ *   You just need to copy the bfelf_file_t structure so that you have it to
+ *   run this API. If you plan to do this, make sure you 0 out the exec in the
+ *   structure prior to running this API, which will force the exec to be equal
+ *   to the virtual address you provide.
+ *
  * @expects ef != nullptr
  * @ensures
  *
- * @param exec a buffer of memory the size of "ef.size" with RWE privileges.
- * @param virt the virtual address the executable will be relocated to.
  * @param ef the ELF file structure to initialize.
- * @param mark_rx a mprotect function to mark a region of memory as read/execute
- * @return ELF_SUCCESS on success, negative on error
+ * @param virt the virtual address the exec will run from
+ * @return BFSUCCESS on success, BFFAILURE on error
  */
 static inline status_t
-bfelf_file_load(
-    void *exec, bfelf64_addr virt, struct bfelf_file_t *ef, status_t (*mark_rx_func)(void *, size_t));
+bfelf_file_relocate(struct bfelf_file_t *ef, bfelf64_addr virt);
 
 #ifdef __cplusplus
 }

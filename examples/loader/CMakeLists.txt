@@ -20,12 +20,17 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.13)
-project(loader CXX)
+project(loader CXX ASM)
 
 set(CMAKE_CXX_STANDARD 17)
 find_package(standalone_cxx_sdk)
 
-add_executable(loader main.cpp)
-target_link_libraries(loader PRIVATE standalone_cxx_sdk)
+add_executable(loader_from_file loader_from_file.cpp)
+target_link_libraries(loader_from_file PRIVATE standalone_cxx_sdk)
+install(TARGETS loader_from_file DESTINATION bin)
 
-install(TARGETS loader DESTINATION bin)
+add_executable(loader_from_embedded loader_from_embedded.cpp incbin.S)
+target_link_libraries(loader_from_embedded PRIVATE standalone_cxx_sdk)
+target_compile_definitions(loader_from_embedded PRIVATE FILENAME="${CXX_FILE_PATH}")
+target_compile_definitions(loader_from_embedded PRIVATE EF_FILENAME="${CXX_EF_FILE_PATH}")
+install(TARGETS loader_from_embedded DESTINATION bin)

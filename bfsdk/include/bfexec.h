@@ -32,6 +32,10 @@
 #include <bfelf_loader.h>
 #include "bfthreadcontext.h"
 
+#ifndef BFHEAP_ALLOC_SIZE
+#define BFHEAP_ALLOC_SIZE BFHEAP_SIZE
+#endif
+
 /**
  * Platform Functions
  *
@@ -51,6 +55,68 @@ struct bfexec_funcs_t
     status_t (*mark_rx)(void *ptr, size_t size);
     void (*syscall)(uint64_t id, void *args);
 };
+
+/**
+ * Alloc TLS
+ *
+ * @param a function pointer to an alloc function
+ * @return a pointer to a newly allocated TLS block
+ */
+static inline void *
+alloc_tls(void *(*alloc)(size_t size))
+{
+    size_t i;
+    void *ptr = alloc(BFTLS_ALLOC_SIZE);
+
+    if (ptr == nullptr) {
+        BFALERT("alloc_tls failed to allocate the TLS block\n");
+        return nullptr;
+    }
+
+    for (i = 0; i < BFTLS_ALLOC_SIZE; i++) {
+        BFSCAST(char*, ptr)[i] = 0;
+    }
+
+    return ptr;
+}
+
+/**
+ * Alloc Stack
+ *
+ * @param a function pointer to an alloc function
+ * @return a pointer to a newly allocated stack
+ */
+static inline void *
+alloc_stack(void *(*alloc)(size_t size))
+{
+    void *ptr = alloc(BFSTACK_ALLOC_SIZE);
+
+    if (ptr == nullptr) {
+        BFALERT("alloc_stack failed to allocate the stack\n");
+        return nullptr;
+    }
+
+    return ptr;
+}
+
+/**
+ * Alloc Heap
+ *
+ * @param a function pointer to an alloc function
+ * @return a pointer to a newly allocated heap
+ */
+static inline void *
+alloc_heap(void *(*alloc)(size_t size))
+{
+    void *ptr = alloc(BFHEAP_ALLOC_SIZE);
+
+    if (ptr == nullptr) {
+        BFALERT("alloc_heap failed to allocate the heap\n");
+        return nullptr;
+    }
+
+    return ptr;
+}
 
 /**
  * Bareflank Execute
@@ -79,26 +145,57 @@ struct bfexec_funcs_t
 static inline status_t
 bfexecs(struct bfelf_file_t *ef, struct _start_args_t *_start_args)
 {
+    status_t ret;
     uint64_t sp = 0;
 
-    if (ef == NULL) {
+    void *tls = _start_args->tls;
+    void *stack = _start_args->stack;
+    void *heap = _start_args->heap;
+
+    if (ef == nullptr) {
         BFALERT("bfexec failed: invalid ELF file\n");
         return BFFAILURE;
     }
 
-    if (_start_args == NULL) {
+    if (_start_args == nullptr) {
         BFALERT("bfexec failed: invalid _start_args\n");
         return BFFAILURE;
     }
 
-    if (_start_args->stack == NULL) {
-        BFALERT("bfexec failed: invalid _start_args->stack\n");
-        return BFFAILURE;
+    if (tls == nullptr || stack == nullptr || heap == nullptr) {
+        if (_start_args->alloc == nullptr) {
+            BFALERT("bfexec failed: if tls, stack or heap is not set, alloc must be set\n");
+            return BFFAILURE;
+        }
     }
 
-    if (_start_args->tls == NULL) {
-        BFALERT("bfexec failed: invalid _start_args->tls\n");
-        return BFFAILURE;
+    if (_start_args->tls == nullptr) {
+        _start_args->tls = alloc_tls(_start_args->alloc);
+        if (_start_args->tls == nullptr) {
+            BFALERT("bfexec failed: failed to allocate the tls block\n");
+            goto release;
+        }
+    }
+
+
+    if (_start_args->stack == nullptr) {
+        _start_args->stack = alloc_stack(_start_args->alloc);
+        if (_start_args->stack == nullptr) {
+            BFALERT("bfexec failed: failed to allocate the stack\n");
+            goto release;
+        }
+    }
+
+    if (_start_args->heap == nullptr) {
+        _start_args->heap = alloc_heap(_start_args->alloc);
+        if (_start_args->heap == nullptr) {
+            BFALERT("bfexec failed: failed to allocate the heap\n");
+            goto release;
+        }
+    }
+
+    if (_start_args->heap_size == 0) {
+        _start_args->heap_size = BFHEAP_ALLOC_SIZE;
     }
 
     _start_args->eh_frame_addr = ef->eh_frame_addr;
@@ -112,17 +209,28 @@ bfexecs(struct bfelf_file_t *ef, struct _start_args_t *_start_args)
         _start_args->stack, _start_args->thread_id, _start_args->tls
     );
 
-    if (((_start_t)ef->entry)(sp, _start_args) != 0) {
-        BFALERT("_start exited with non-zero exit status\n");
-        return BFFAILURE;
-    }
+    ret = ((_start_t)ef->entry)(sp, _start_args);
 
     if (validate_canaries(_start_args->stack) != BFSUCCESS) {
         BFALERT("stack corruption detected!!!\n");
         return BFFAILURE;
     }
 
-    return BFSUCCESS;
+release:
+
+    if (_start_args->free != nullptr && tls == nullptr) {
+        _start_args->free(_start_args->tls, BFTLS_ALLOC_SIZE);
+    }
+
+    if (_start_args->free != nullptr && stack == nullptr) {
+        _start_args->free(_start_args->stack, BFSTACK_ALLOC_SIZE);
+    }
+
+    if (_start_args->free != nullptr && heap == nullptr) {
+        _start_args->free(_start_args->heap, BFHEAP_ALLOC_SIZE);
+    }
+
+    return ret;
 }
 
 /**
@@ -150,7 +258,6 @@ bfexecs(struct bfelf_file_t *ef, struct _start_args_t *_start_args)
  * read/write/execute permissions.
  *
  * @param file a pointer to the ELF file to execute
- * @param size the size of the ELF file
  * @param argc the number of arguments to pass to ELF file on start
  * @param argv the arguments to pass to the ELF file on start
  * @param funcs helper functions needed by bfexec and friends
@@ -159,23 +266,18 @@ bfexecs(struct bfelf_file_t *ef, struct _start_args_t *_start_args)
 static inline status_t
 bfexecv(
     void *file,
-    size_t size,
     int argc,
     char **argv,
     struct bfexec_funcs_t *funcs)
 {
-    size_t i;
     status_t ret;
+
+    void *exec;
     struct bfelf_file_t ef;
     struct _start_args_t _start_args = {0};
 
     if (file == nullptr) {
         BFALERT("bfexec failed: invalid ELF file\n");
-        return BFFAILURE;
-    }
-
-    if (size == 0) {
-        BFALERT("bfexec failed: invalid ELF file size\n");
         return BFFAILURE;
     }
 
@@ -189,52 +291,39 @@ bfexecv(
         return BFFAILURE;
     }
 
-    ret = bfelf_file_init(file, size, &ef);
-    if (ret != BFSUCCESS) {
+    if (bfelf_file_init(file, &ef) != BFSUCCESS) {
         BFALERT("bfexec failed: failed to init ELF file\n");
         return BFFAILURE;
     }
 
-    _start_args.exec = bfelf_file_alloc(&ef, funcs->alloc);
-    if (_start_args.exec == nullptr) {
+    exec = funcs->alloc(ef.size);
+    if (exec == nullptr) {
         BFALERT("bfexec failed: failed to allocate memory for exec\n");
         return BFFAILURE;
     }
 
-    ret = bfelf_file_load(_start_args.exec, 0, &ef, funcs->mark_rx);
-    if (ret != BFSUCCESS) {
+    if (bfelf_file_load(&ef, exec, funcs->mark_rx) != BFSUCCESS) {
         BFALERT("bfexec failed: failed to load ELF file\n");
+        goto release;
+    }
+
+    if (bfelf_file_relocate(&ef, 0) != BFSUCCESS) {
+        BFALERT("bfexec failed: failed to relocate ELF file\n");
         goto release;
     }
 
     _start_args.argc = argc;
     _start_args.argv = argv;
     _start_args.syscall_func = funcs->syscall;
-
-    _start_args.stack = funcs->alloc(__stack_size());
-    if (_start_args.stack == nullptr) {
-        BFALERT("bfexec failed: failed to allocate stack\n");
-        goto release;
-    }
-
-    _start_args.tls = funcs->alloc(BFTLS_SIZE);
-    if (_start_args.tls == nullptr) {
-        BFALERT("bfexec failed: failed to allocate stack\n");
-        goto release;
-    }
-
-    for (i = 0; i < BFTLS_SIZE; i++) {
-        BFSCAST(char*, _start_args.tls)[i] = 0;
-    }
+    _start_args.alloc = funcs->alloc;
+    _start_args.free = funcs->free;
 
     ret = bfexecs(&ef, &_start_args);
 
 release:
 
     if (funcs->free != nullptr) {
-        funcs->free(_start_args.exec, ef.size);
-        funcs->free(_start_args.stack, __stack_size());
-        funcs->free(_start_args.tls, BFTLS_SIZE);
+        funcs->free(exec, ef.size);
     }
 
     return ret;
@@ -271,8 +360,22 @@ release:
 static inline status_t
 bfexec(
     void *file,
-    size_t size,
     struct bfexec_funcs_t *funcs)
-{ return bfexecv(file, size, 0, nullptr, funcs); }
+{ return bfexecv(file, 0, nullptr, funcs); }
+
+/**
+ * BFINCLUDE_ALLOCATIONS
+ *
+ * If you define BFINCLUDE_ALLOCATIONS prior to including this file, the
+ * following will be defined for you. This prevents you from having to know
+ * how to set up the TLS block, stack and heap yourself. Note that if you want
+ * to keep the total size of your application small, you should define these
+ * yourself using dynamic memory allocation.
+ */
+#ifdef BFINCLUDE_ALLOCATIONS
+    char g_tls[BFTLS_ALLOC_SIZE] = {0};
+    char g_stack[BFSTACK_ALLOC_SIZE];
+    char g_heap[BFHEAP_ALLOC_SIZE];
+#endif
 
 #endif

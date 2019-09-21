@@ -90,6 +90,9 @@ set(CMAKE_TARGET_MESSAGES ${CMAKE_VERBOSE_MAKEFILE} CACHE INTERNAL "" FORCE)
 set(BINUTILS_URL "https://ftp.gnu.org/gnu/binutils/binutils-2.32.tar.gz" CACHE INTERNAL "" FORCE)
 set(BINUTILS_URL_MD5 "d1119c93fc0ed3007be4a84dd186af55" CACHE INTERNAL "" FORCE)
 
+set(CATCH2_URL "https://github.com/catchorg/Catch2/archive/v2.9.2.zip" CACHE INTERNAL "" FORCE)
+set(CATCH2_URL_MD5 "4aee26be3fb0c303c1c4c2f331fd89e4" CACHE INTERNAL "" FORCE)
+
 set(GNUEFI_URL "https://github.com/Bareflank/gnu-efi/archive/v2.0.zip" CACHE INTERNAL "" FORCE)
 set(GNUEFI_URL_MD5 "3cd10dc9c14f4a3891f8537fd78ed04f" CACHE INTERNAL "" FORCE)
 

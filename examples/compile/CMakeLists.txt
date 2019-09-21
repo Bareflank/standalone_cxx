@@ -25,7 +25,20 @@ project(compile CXX)
 set(CMAKE_CXX_STANDARD 17)
 find_package(standalone_cxx_sdk)
 
-add_executable(compile compile.cpp)
-target_link_libraries(compile PRIVATE standalone_cxx_sdk)
+add_executable(compile_loader compile_loader.cpp)
+target_link_libraries(compile_loader PRIVATE standalone_cxx_sdk)
+install(TARGETS compile_loader DESTINATION bin)
 
-install(TARGETS compile DESTINATION bin)
+add_executable(compile_payload compile_payload.cpp)
+target_link_libraries(compile_payload PRIVATE standalone_cxx_sdk)
+install(TARGETS compile_payload DESTINATION bin)
+
+add_custom_command(
+    TARGET compile_payload
+    POST_BUILD
+    COMMAND bash
+    ARGS ${CMAKE_CURRENT_LIST_DIR}/compile.sh
+    ARGS ${CMAKE_INSTALL_PREFIX}/bin/payload
+    ARGS ${CMAKE_INSTALL_PREFIX}/bin/filecmp
+    ARGS ${CMAKE_BINARY_DIR}/compile_payload
+)

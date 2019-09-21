@@ -208,6 +208,7 @@ include_dependency(newlib)
 include_dependency(llvm)
 include_dependency(libcxxabi)
 include_dependency(libcxx)
+include_dependency(catch2)
 
 add_subproject(bfsdk ${CMAKE_CURRENT_LIST_DIR}/bfsdk DEPENDS libcxx)
 add_subproject(bfruntime ${CMAKE_CURRENT_LIST_DIR}/bfruntime DEPENDS bfsdk)

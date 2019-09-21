@@ -100,10 +100,9 @@ platform_syscall(uint64_t id, void *args)
 }
 
 struct bfexec_funcs_t funcs = {
-    platform_alloc,
-    0,
-    platform_mark_rx,
-    platform_syscall
+    .alloc = platform_alloc,
+    .mark_rx = platform_mark_rx,
+    .syscall = platform_syscall
 };
 
 /* -------------------------------------------------------------------------- */
@@ -123,5 +122,5 @@ void start_c()
     size = external_filesize(fd);
     file = external_filemmap(fd, size);
 
-    external_exit(bfexec(file, size, &funcs));
+    external_exit(bfexec(file, &funcs));
 }

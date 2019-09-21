@@ -128,21 +128,20 @@ map_file(const std::string &filename)
 // Arguments
 //
 // 1: payload
-// 2: filecmp
-// 3: output file (usually payload.bin)
-// 4: address of open
-// 5: address of filesize
-// 6: address of filemmap
-// 7: address of exit
-// 8: address of malloc
-// 9: address of write
-// 10: address of mprotect
-// 11: address of fprintf
-// 12: address of stderr
+// 2: output file (payload.bin)
+// 3: address of open
+// 4: address of filesize
+// 5: address of filemmap
+// 6: address of exit
+// 7: address of malloc
+// 8: address of write
+// 9: address of mprotect
+// 10: address of fprintf
+// 11: address of stderr
 //
 int main(int argc, char *argv[])
 {
-    if (argc != 13) {
+    if (argc != 12) {
         throw std::runtime_error("wrong number of arguments");
         exit(1);
     }
@@ -151,36 +150,42 @@ int main(int argc, char *argv[])
     // Map files
 
     auto [payload, payload_size, payload_fd] = map_file(argv[1]);
-    auto [filecmp, filecmp_size, filecmp_fd] = map_file(argv[2]);
 
     // -------------------------------------------------------------------------
     // Address Information
 
-    uint64_t addr_buffer1 = 0x7fffffffbf10;
-    uint64_t addr_open = std::stoull(argv[4], nullptr, 16);
-    uint64_t addr_filesize = std::stoull(argv[5], nullptr, 16);
-    uint64_t addr_filemmap = std::stoull(argv[6], nullptr, 16);
-    uint64_t addr_exit = std::stoull(argv[7], nullptr, 16);
-    uint64_t addr_malloc = std::stoull(argv[8], nullptr, 16);
-    uint64_t addr_write = std::stoull(argv[9], nullptr, 16);
-    uint64_t addr_mprotect = std::stoull(argv[10], nullptr, 16);
-    uint64_t addr_fprintf = std::stoull(argv[11], nullptr, 16);
-    uint64_t addr_stderr = std::stoull(argv[12], nullptr, 16);
+    uint64_t addr_buffer1 = 0x7fffffffba90;
+    uint64_t addr_open = std::stoull(argv[3], nullptr, 16);
+    uint64_t addr_filesize = std::stoull(argv[4], nullptr, 16);
+    uint64_t addr_filemmap = std::stoull(argv[5], nullptr, 16);
+    uint64_t addr_exit = std::stoull(argv[6], nullptr, 16);
+    uint64_t addr_malloc = std::stoull(argv[7], nullptr, 16);
+    uint64_t addr_write = std::stoull(argv[8], nullptr, 16);
+    uint64_t addr_mprotect = std::stoull(argv[9], nullptr, 16);
+    uint64_t addr_fprintf = std::stoull(argv[10], nullptr, 16);
+    uint64_t addr_stderr = std::stoull(argv[11], nullptr, 16);
 
     // -------------------------------------------------------------------------
     // Convert ELF to flat binary
 
     struct bfelf_file_t ef;
-    if (bfelf_file_init(payload, payload_size, &ef) != BFSUCCESS) {
+    if (bfelf_file_init(payload, &ef) != BFSUCCESS) {
         throw std::runtime_error("failed to init the payload ELF file");
     }
 
-    auto exec = static_cast<char *>(bfelf_file_alloc(&ef, malloc));
+    auto exec = new char[ef.size];
     if (exec == nullptr) {
-        throw std::runtime_error("failed to allocate memory for the payload");
+        throw std::runtime_error("failed to allocate memory for the payload ELF file");
     }
 
-    if (bfelf_file_load(exec, addr_buffer1, &ef, nullptr) != BFSUCCESS) {
+    if (bfelf_file_load(&ef, exec, nullptr) != BFSUCCESS) {
+        throw std::runtime_error("failed to load the payload ELF file");
+    }
+
+    munmap(payload, payload_size);
+    close(payload_fd);
+
+    if (bfelf_file_relocate(&ef, addr_buffer1) != BFSUCCESS) {
         throw std::runtime_error("failed to load the payload ELF file");
     }
 
@@ -212,18 +217,14 @@ int main(int argc, char *argv[])
     // -------------------------------------------------------------------------
     // Output the flat binary
 
-    if (auto stream = std::fstream(argv[3], std::fstream::out | std::fstream::binary)) {
+    if (auto stream = std::fstream(argv[2], std::fstream::out | std::fstream::binary)) {
         stream.write(exec, ef.size);
     }
 
+    delete [] exec;
+
     // -------------------------------------------------------------------------
-    // Cleanup
-
-    munmap(payload, payload_size);
-    close(payload_fd);
-
-    munmap(filecmp, filecmp_size);
-    close(filecmp_fd);
+    // Done
 
     return 0;
 }

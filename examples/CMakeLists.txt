@@ -20,67 +20,6 @@
 # SOFTWARE.
 
 # ------------------------------------------------------------------------------
-# Tests
-# ------------------------------------------------------------------------------
-
-list(APPEND TESTS_CXX_ARGN
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-    CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-    CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
-    CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
-    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-)
-
-if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
-    list(APPEND TESTS_CXX_ARGN
-        CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
-    )
-endif()
-
-ExternalProject_Add (
-    tests
-    ${TESTS_CXX_ARGN}
-    DEPENDS             bfelf_loader bfruntime bfunwind
-    PREFIX              ${CMAKE_BINARY_DIR}/examples/tests
-    STAMP_DIR           ${CMAKE_BINARY_DIR}/examples/tests/stamp
-    TMP_DIR             ${CMAKE_BINARY_DIR}/examples/tests/tmp
-    BINARY_DIR          ${CMAKE_BINARY_DIR}/examples/tests/build
-    LOG_DIR             ${CMAKE_BINARY_DIR}/examples/tests/logs
-    SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/tests
-    UPDATE_COMMAND      cmake -E echo -- Checking for changes
-)
-
-# ------------------------------------------------------------------------------
-# Loader
-# ------------------------------------------------------------------------------
-
-list(APPEND LOADER_CXX_ARGN
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-    CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
-    CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
-    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
-)
-
-if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
-    list(APPEND LOADER_CXX_ARGN
-        CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
-    )
-endif()
-
-ExternalProject_Add (
-    loader
-    ${LOADER_CXX_ARGN}
-    DEPENDS             bfelf_loader
-    PREFIX              ${CMAKE_BINARY_DIR}/examples/loader
-    STAMP_DIR           ${CMAKE_BINARY_DIR}/examples/loader/stamp
-    TMP_DIR             ${CMAKE_BINARY_DIR}/examples/loader/tmp
-    BINARY_DIR          ${CMAKE_BINARY_DIR}/examples/loader/build
-    LOG_DIR             ${CMAKE_BINARY_DIR}/examples/loader/logs
-    SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/loader
-    UPDATE_COMMAND      cmake -E echo -- Checking for changes
-)
-
-# ------------------------------------------------------------------------------
 # File Compare
 # ------------------------------------------------------------------------------
 
@@ -88,6 +27,7 @@ list(APPEND FILECMP_CXX_ARGN
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
     CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
     CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug
 )
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
@@ -130,7 +70,7 @@ endif()
 ExternalProject_Add (
     payload
     ${PAYLOAD_CXX_ARGN}
-    DEPENDS             tests
+    DEPENDS             bfsdk bfelf_loader
     PREFIX              ${CMAKE_BINARY_DIR}/examples/payload
     STAMP_DIR           ${CMAKE_BINARY_DIR}/examples/payload/stamp
     TMP_DIR             ${CMAKE_BINARY_DIR}/examples/payload/tmp
@@ -141,7 +81,7 @@ ExternalProject_Add (
 )
 
 # ------------------------------------------------------------------------------
-# Attack Compiler
+# Compile
 # ------------------------------------------------------------------------------
 
 list(APPEND COMPILE_CXX_ARGN
@@ -160,13 +100,76 @@ endif()
 ExternalProject_Add (
     compile
     ${COMPILE_CXX_ARGN}
-    DEPENDS             bfelf_loader
+    DEPENDS             bfsdk bfelf_loader filecmp payload
     PREFIX              ${CMAKE_BINARY_DIR}/examples/compile
     STAMP_DIR           ${CMAKE_BINARY_DIR}/examples/compile/stamp
     TMP_DIR             ${CMAKE_BINARY_DIR}/examples/compile/tmp
     BINARY_DIR          ${CMAKE_BINARY_DIR}/examples/compile/build
     LOG_DIR             ${CMAKE_BINARY_DIR}/examples/compile/logs
     SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/compile
+    UPDATE_COMMAND      cmake -E echo -- Checking for changes
+)
+
+# ------------------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------------------
+
+list(APPEND TESTS_CXX_ARGN
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+    CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
+    CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    list(APPEND TESTS_CXX_ARGN
+        CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+    )
+endif()
+
+ExternalProject_Add (
+    tests
+    ${TESTS_CXX_ARGN}
+    DEPENDS             bfruntime bfunwind compile
+    PREFIX              ${CMAKE_BINARY_DIR}/examples/tests
+    STAMP_DIR           ${CMAKE_BINARY_DIR}/examples/tests/stamp
+    TMP_DIR             ${CMAKE_BINARY_DIR}/examples/tests/tmp
+    BINARY_DIR          ${CMAKE_BINARY_DIR}/examples/tests/build
+    LOG_DIR             ${CMAKE_BINARY_DIR}/examples/tests/logs
+    SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/tests
+    UPDATE_COMMAND      cmake -E echo -- Checking for changes
+)
+
+# ------------------------------------------------------------------------------
+# Loader
+# ------------------------------------------------------------------------------
+
+list(APPEND LOADER_CXX_ARGN
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
+    CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=MinSizeRel
+    CMAKE_ARGS -DCXX_FILE_PATH=${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank.bin
+    CMAKE_ARGS -DCXX_EF_FILE_PATH=${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank_ef.bin
+)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    list(APPEND LOADER_CXX_ARGN
+        CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+    )
+endif()
+
+ExternalProject_Add (
+    loader
+    ${LOADER_CXX_ARGN}
+    DEPENDS             bfsdk bfelf_loader tests
+    PREFIX              ${CMAKE_BINARY_DIR}/examples/loader
+    STAMP_DIR           ${CMAKE_BINARY_DIR}/examples/loader/stamp
+    TMP_DIR             ${CMAKE_BINARY_DIR}/examples/loader/tmp
+    BINARY_DIR          ${CMAKE_BINARY_DIR}/examples/loader/build
+    LOG_DIR             ${CMAKE_BINARY_DIR}/examples/loader/logs
+    SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/loader
     UPDATE_COMMAND      cmake -E echo -- Checking for changes
 )
 
@@ -179,6 +182,9 @@ list(APPEND UEFI_CXX_ARGN
     CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_LIST_DIR}/uefi/CMakeToolchain.cmake
     CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
     CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
+    CMAKE_ARGS -DCXX_FILE_PATH=${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank.bin
+    CMAKE_ARGS -DCXX_EF_FILE_PATH=${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank_ef.bin
 )
 
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
@@ -190,7 +196,7 @@ endif()
 ExternalProject_Add (
     uefi
     ${UEFI_CXX_ARGN}
-    DEPENDS             bfelf_loader tests
+    DEPENDS             bfsdk bfelf_loader tests
     PREFIX              ${CMAKE_BINARY_DIR}/examples/uefi
     STAMP_DIR           ${CMAKE_BINARY_DIR}/examples/uefi/stamp
     TMP_DIR             ${CMAKE_BINARY_DIR}/examples/uefi/tmp
@@ -201,48 +207,42 @@ ExternalProject_Add (
 )
 
 # ------------------------------------------------------------------------------
-# Test Files
-# ------------------------------------------------------------------------------
-
-file(WRITE ${CMAKE_INSTALL_PREFIX}/bin/test.txt "The answer is: 42\n")
-
-# ------------------------------------------------------------------------------
 # Targets
 # ------------------------------------------------------------------------------
 
 add_custom_target(
     quick
-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader ${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader_from_file ${CMAKE_INSTALL_PREFIX}/bin/hello_bareflank
     USES_TERMINAL
 )
 
 add_custom_target(
-    hello_world
-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader ${CMAKE_INSTALL_PREFIX}/bin/hello_world
+    quick_embedded
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader_from_embedded
     USES_TERMINAL
 )
 
 add_custom_target(
-    hello_world_printf
-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader ${CMAKE_INSTALL_PREFIX}/bin/hello_world_printf
-    USES_TERMINAL
-)
-
-add_custom_target(
-    link_payload
+    quick_payload
     COMMAND echo 0 | sudo tee /proc/sys/kernel/randomize_va_space > /dev/null
-    COMMAND bash ${CMAKE_CURRENT_LIST_DIR}/compile/compile.sh ${CMAKE_INSTALL_PREFIX}/bin/payload ${CMAKE_INSTALL_PREFIX}/bin/filecmp ${CMAKE_INSTALL_PREFIX}/bin/compile
-    USES_TERMINAL
-)
-
-add_custom_target(
-    run_filecmp_with_payload
     COMMAND ${CMAKE_INSTALL_PREFIX}/bin/filecmp ${CMAKE_INSTALL_PREFIX}/bin/payload.bin ${CMAKE_INSTALL_PREFIX}/bin/test.txt
     USES_TERMINAL
 )
 
 add_custom_target(
-    run_filecmp
-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/filecmp ${CMAKE_INSTALL_PREFIX}/bin/test.txt ${CMAKE_INSTALL_PREFIX}/bin/test.txt
+    test_empty
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader_from_file ${CMAKE_INSTALL_PREFIX}/bin/empty
+    USES_TERMINAL
+)
+
+add_custom_target(
+    test_hello_world
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader_from_file ${CMAKE_INSTALL_PREFIX}/bin/hello_world
+    USES_TERMINAL
+)
+
+add_custom_target(
+    test_hello_world_printf
+    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/loader_from_file ${CMAKE_INSTALL_PREFIX}/bin/hello_world_printf
     USES_TERMINAL
 )
