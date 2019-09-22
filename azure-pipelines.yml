@@ -27,10 +27,13 @@ pool:
 
 steps:
 - script: |
+
+    sudo apt-get install git build-essential clang #cmake
+
     CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
-    mkdir cmake
-    wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-    export PATH=$(pwd)/cmake/bin:${PATH}
+    mkdir custom_cmake
+    wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
+    export PATH=$(pwd)/custom_cmake/bin:${PATH}
 
     mkdir working
     mkdir working/build
