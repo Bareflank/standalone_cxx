@@ -20,19 +20,12 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.13)
-project(payload C ASM)
+project(bfcompile CXX)
 
+set(CMAKE_CXX_STANDARD 17)
 find_package(standalone_cxx_sdk)
 
-add_executable(payload payload.S payload.c)
-target_compile_definitions(payload PRIVATE FILENAME="${CXX_PAYLOAD_PATH}")
-target_link_libraries(payload PRIVATE standalone_cxx_sdk)
-target_include_directories(payload SYSTEM PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
+add_executable(bfcompile main.cpp)
+target_link_libraries(bfcompile PRIVATE standalone_cxx_sdk)
 
-add_custom_command(
-    TARGET payload
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_SOURCE_DIR}/../compile/compile_payload.cpp
-)
-
-install(TARGETS payload DESTINATION bin)
+install(TARGETS bfcompile DESTINATION bin)

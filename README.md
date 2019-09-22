@@ -3,7 +3,10 @@
 ## Description
 
 Standalone C++ is an open source, freestanding implementation of C++ led by Assured Information Security, Inc. (AIS),
-that leverages Libc++ from the LLVM project. This project provides the ability to run C++ from anywhere, even in environments that do not support C++ including UEFI, IoT, Automotive, Embedded Systems, Hypervisor, Unikernels, Windows/Linux kernel modules or any other freestanding environment (where -ffreestanding is enabled). The goal of this project is to enable the use of C++ from any environment.
+that leverages Libc++ from the LLVM project. This project provides the ability to run C++ from anywhere, even in environments that do not support C++ including UEFI, IoT, Automotive, Embedded Systems, Hypervisor, Unikernels, Windows/Linux kernel modules or any other freestanding environment (where -ffreestanding is enabled). Unlike a traditional freestanding environment where
+the C++ APIs are limited to the freestanding specification, this projects
+provides the ability to standup a full C++ environment when "-ffreestanding"
+is required.
 
 ## Dependencies:
 
@@ -53,6 +56,7 @@ make quick
 # |___/\__,_|_| \___|_| |_\__,_|_||_|_\_\
 #
 # Please give us a star on: https://github.com/Bareflank/standalone_cxx
+#
 ```
 
 ### Windows 10
@@ -71,7 +75,7 @@ To write your own C++ application, you first start with some C++ as follows:
 ```cpp
 #include <iostream>
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
     std::cout << "Hello World!!!\n";
     return 0;
@@ -231,13 +235,13 @@ EFI_STATUS
 efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
     InitializeLib(image, systab);
-    return bfexec(cxx_uefi, cxx_uefi_len, &funcs);
+    return bfexec(cxx_uefi, &funcs);
 }
 ```
 
 The `bfexec()` function takes a pointer to the C++ application you wish to execute. This could be a buffer you allocate and load with the C++ application from disk, or it could be a pointer to an array that has the C++ application pre-populated as we do using `xxd`. Finally the bfexec takes the size (in bytes) of the C++ application and a pointer to our helper functions, returning the results of the main() function in your C++ application.
 
-That's it! That is all you need to run C++ from anywhere.
+That's it! That is all you need to run C++ from anywhere. For further information, see our examples folder where we show how to create different test C++ applications as well as different loaders (we even have a working UEFI example as well that uses bfcompile to remove the need for a double allocation).
 
 ## License
 

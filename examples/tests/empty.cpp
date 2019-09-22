@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
     return 0;
 }

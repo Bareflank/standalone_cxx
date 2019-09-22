@@ -35,7 +35,7 @@ bfsyscall:
     push r14
     push r15
 
-    mov rax, __g_syscall_func[rip]
+    mov rax, __g_syscall[rip]
     cmp rax, 0
     je ignore
 

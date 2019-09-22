@@ -19,65 +19,57 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <array>
-#include <string>
-#include <memory>
-#include <iostream>
-#include <stdexcept>
+#include <sys/mman.h>
+#include <sys/types.h>
 
-std::array<const char *, 5> logo = {
-    "  ___                __ _           _                 \n",
-    " | _ ) __ _ _ _ ___ / _| |__ _ _ _ | |__              \n",
-    " | _ \\/ _` | '_/ -_)  _| / _` | ' \\| / /            \n",
-    " |___/\\__,_|_| \\___|_| |_\\__,_|_||_|_\\_\\         \n",
-    "                                                      \n"
-};
+#include <vector>
+#include <fstream>
+#include <filesystem>
 
-class test_init
+#include <bfexec.h>
+
+// -----------------------------------------------------------------------------
+// bfexec "funcs"
+// -----------------------------------------------------------------------------
+
+#include <cstdlib>
+
+void *
+platform_alloc(size_t size)
 {
-public:
-    test_init()
-    {
-        for (const auto &elem : logo) {
-            std::cout << elem;
+    if (auto ptr = aligned_alloc(0x20000, size)) {
+        if (mprotect(ptr, size, PROT_READ|PROT_WRITE|PROT_EXEC) == 0) {
+            return ptr;
         }
     }
+
+    return nullptr;
+}
+
+bfexec_funcs_t funcs = {
+    .alloc = platform_alloc
 };
 
-class test_exit
-{
-public:
-    ~test_exit()
-    { std::cout << '\n'; }
-};
-
-test_init s_init;
+// -----------------------------------------------------------------------------
+// Implementation
+// -----------------------------------------------------------------------------
 
 int main(int argc, const char *argv[])
 {
-    std::string stars;
-    static test_exit s_exit;
+    std::vector<char> file;
 
     if (argc != 2) {
-        stars = " Please give us a star on: https://github.com/Bareflank/standalone_cxx";
+        throw std::runtime_error("wrong number of arguments");
+    }
+
+    if (auto strm = std::ifstream(argv[1], std::fstream::binary)) {
+        auto size = std::filesystem::file_size(argv[1]);
+        file.reserve(size);
+        strm.read(file.data(), size);
     }
     else {
-        stars = argv[1];
+        throw std::runtime_error("failed to open input file");
     }
 
-    try {
-        throw std::runtime_error(stars);
-    }
-    catch (const std::exception &e) {
-        std::cerr << e.what() << '\n';
-    }
-
-    try {
-        std::make_unique<char[]>(1 << 14);
-    }
-    catch (const std::exception &e) {
-        std::cerr << "\n note: custom stack detected!!!\n";
-    }
-
-    return 0;
+    return bfexec(file.data(), &funcs);
 }

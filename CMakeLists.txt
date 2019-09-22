@@ -215,6 +215,40 @@ add_subproject(bfruntime ${CMAKE_CURRENT_LIST_DIR}/bfruntime DEPENDS bfsdk)
 add_subproject(bfunwind ${CMAKE_CURRENT_LIST_DIR}/bfunwind DEPENDS bfsdk)
 add_subproject(bfelf_loader ${CMAKE_CURRENT_LIST_DIR}/bfelf_loader DEPENDS bfsdk)
 
+# ------------------------------------------------------------------------------
+# bfcompile
+# ------------------------------------------------------------------------------
+
+list(APPEND BFCOMPILE_CXX_ARGN
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
+    CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
+)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    list(APPEND BFCOMPILE_CXX_ARGN
+        CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+    )
+endif()
+
+ExternalProject_Add (
+    bfcompile
+    ${BFCOMPILE_CXX_ARGN}
+    DEPENDS             bfsdk bfelf_loader
+    PREFIX              ${CMAKE_BINARY_DIR}/bfcompile/loader
+    STAMP_DIR           ${CMAKE_BINARY_DIR}/bfcompile/loader/stamp
+    TMP_DIR             ${CMAKE_BINARY_DIR}/bfcompile/loader/tmp
+    BINARY_DIR          ${CMAKE_BINARY_DIR}/bfcompile/loader/build
+    LOG_DIR             ${CMAKE_BINARY_DIR}/bfcompile/loader/logs
+    SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/bfcompile
+    UPDATE_COMMAND      cmake -E echo -- Checking for changes
+)
+
+# ------------------------------------------------------------------------------
+# Examples
+# ------------------------------------------------------------------------------
+
 add_subdirectory(examples)
 
 # ------------------------------------------------------------------------------

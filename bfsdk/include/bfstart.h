@@ -28,7 +28,6 @@
 #define BFSTART_H
 
 #include "bftypes.h"
-#include "bfsyscall.h"
 
 #pragma pack(push, 1)
 
@@ -53,6 +52,8 @@
  *      main()'s argc
  * @var section_info_t::argv (optional)
  *      main()'s argv
+ * @var section_info_t::exec (required)
+ *      a pointer to the application
  * @var section_info_t::tls (required)
  *      a pointer to the TLS block the application will use
  * @var section_info_t::stack (required)
@@ -63,12 +64,12 @@
  *      the size of the heap the application will use
  * @var section_info_t::thread_id (default to 0)
  *      the ID of the application's thread when started (usually 0)
- * @var section_info_t::syscall_func (optional)
- *      the syscall function to use when a syscall is made.
  * @var section_info_t::alloc (optional)
  *      the alloc function to use when allocating the TLS block, stack or heap
  * @var section_info_t::free (optional)
  *      the free function to use when freeing the TLS block, stack or heap
+ * @var section_info_t::syscall (optional)
+ *      the syscall function to use when a syscall is made.
  */
 struct _start_args_t {
     uint64_t eh_frame_addr;
@@ -78,15 +79,16 @@ struct _start_args_t {
     uint64_t fini_array_addr;
     uint64_t fini_array_size;
     int32_t argc;
-    char **argv;
+    const char **argv;
+    void *exec;
     void *tls;
     void *stack;
     void *heap;
     uint64_t heap_size;
     uint64_t thread_id;
-    syscall_func_t syscall_func;
     void *(*alloc)(size_t size);
     void (*free)(void *ptr, size_t size);
+    void (*syscall)(uint64_t id, void *args);
 };
 
 #ifdef __cplusplus

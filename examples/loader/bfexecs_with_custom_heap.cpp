@@ -19,92 +19,76 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 
-#include <tuple>
-#include <string>
-#include <array>
-#include <fstream>
-#include <iostream>
+#include <bfexec.h>
 
 // -----------------------------------------------------------------------------
-// Macros
+// Binary Includes
 // -----------------------------------------------------------------------------
 
-#define BUFFER_SIZE 0x2000
+extern void *file;
+extern size_t file_size;
+extern struct bfelf_file_t *ef;
 
 // -----------------------------------------------------------------------------
-// Map File
+// Helper Functions
 // -----------------------------------------------------------------------------
 
-size_t
-filesize(int fd)
+#include <cerrno>
+#include <cstdlib>
+#include <unistd.h>
+
+void
+platform_syscall_write(bfsyscall_write_args *args)
 {
-    struct stat s = {};
-    if (int ret = fstat(fd, &s); ret != -1) {
-        return s.st_size;
-    }
+    switch(args->fd) {
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
+            errno = 0;
+            args->ret = write(args->fd, args->buf, args->nbyte);
+            args->error = errno;
+            return;
 
-    throw std::runtime_error("failed to fstat file");
+        default:
+            return;
+    }
 }
 
-char *
-filemmap(int fd, size_t size)
+void
+platform_syscall(uint64_t id, void *args)
 {
-    if (auto f = mmap(0, size, PROT_READ, MAP_PRIVATE, fd, 0); f != MAP_FAILED) {
-        return static_cast<char *>(f);
+    switch(id) {
+        case BFSYSCALL_WRITE:
+            return platform_syscall_write(
+                static_cast<bfsyscall_write_args *>(args));
+
+        default:
+            return;
     }
-
-    throw std::runtime_error("failed to mmap file");
-}
-
-
-std::tuple<char *, size_t, int>
-map_file(const std::string &filename)
-{
-    int fd = open(filename.c_str(), O_RDONLY);
-    if (fd == -1) {
-        throw std::runtime_error("failed to open file: " + filename);
-    }
-
-    auto size = filesize(fd);
-    auto file = filemmap(fd, size);
-
-    return {static_cast<char *>(file), size, fd};
 }
 
 // -----------------------------------------------------------------------------
-// The Guts
+// Implementation
 // -----------------------------------------------------------------------------
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
-    char buffer1[BUFFER_SIZE] = {};
-    char buffer2[BUFFER_SIZE] = {};
+    uint64_t heap_size = (1 << 13);
 
-    if (argc != 3) {
-        throw std::runtime_error("wrong number of arguments");
+    struct _start_args_t args = {
+        .exec = file,
+        .tls = alloc_tls(malloc),
+        .stack = alloc_stack(malloc),
+        .heap = malloc(heap_size),
+        .heap_size = heap_size,
+        .syscall = platform_syscall
+    };
+
+    if (mprotect(file, file_size, PROT_READ|PROT_WRITE|PROT_EXEC) != 0) {
+        return BFFAILURE;
     }
 
-    // std::cout << &buffer1 << '\n';
-
-    auto [file1, file1_size, file1_fd] = map_file(argv[1]);
-    memcpy(buffer1, file1, file1_size);
-
-    auto [file2, file2_size, file2_fd] = map_file(argv[2]);
-    memcpy(buffer2, file2, file2_size);
-
-    if (memcmp(buffer1, buffer2, BUFFER_SIZE) == 0) {
-        std::cout << "equal\n";
-    }
-    else {
-        std::cout << "not equal\n";
-    }
-
-    return 0;
+    return bfexecs(ef, &args);
 }

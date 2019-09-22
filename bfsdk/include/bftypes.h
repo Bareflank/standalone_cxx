@@ -39,6 +39,12 @@
 #define BFRCAST(a, b) ((a)(b))
 #endif
 
+#ifdef __cplusplus
+#define BFCCAST(a, b) (const_cast<a>(b))
+#else
+#define BFCCAST(a, b) ((a)(b))
+#endif
+
 #define bfignored(a) (void)a
 #define BFIGNORED(a) (void)a
 

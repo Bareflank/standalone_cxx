@@ -44,7 +44,7 @@ extern "C" {
 #else
 #include <stdio.h>
 #endif
-#define BFALERT(...) printf("[BAREFLANK ALERT]: " __VA_ARGS__)
+#define BFALERT(...) fprintf(stderr, "[BAREFLANK ALERT]: " __VA_ARGS__)
 
 #else
 
@@ -119,6 +119,8 @@ struct bfelf_file_t {
 
     bfelf64_addr eh_frame_addr;
     bfelf64_xword eh_frame_size;
+
+    uint8_t relocated;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -825,6 +827,7 @@ bfelf_file_relocate(
     }
 
     ef->entry += virt;
+    ef->relocated = 1;
 
     return BFSUCCESS;
 }

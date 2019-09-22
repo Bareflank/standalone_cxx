@@ -26,7 +26,7 @@
     .section .data
 
     .type   cxx_binary_data, @object
-    .align  0x1000
+    .align  0x20000
 cxx_binary_data:
     .incbin FILENAME
 cxx_binary_data_end:

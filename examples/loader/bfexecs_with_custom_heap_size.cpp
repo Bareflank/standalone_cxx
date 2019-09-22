@@ -19,82 +19,72 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <bftypes.h>
-#include <bfstart.h>
-#include <bfehframelist.h>
-#include <bfthreadcontext.h>
-#include <bfweak.h>
-#include <bfsyscall.h>
+#include <sys/mman.h>
+#include <sys/types.h>
 
-#include <stdlib.h>
-#include <iostream>
+#define BFINCLUDE_ALLOCATIONS
+#define BFHEAP_ALLOC_SIZE (1 << 13)
+#include <bfexec.h>
 
 // -----------------------------------------------------------------------------
-// Global Resources
+// Binary Includes
 // -----------------------------------------------------------------------------
 
-eh_frame_t __g_eh_frame = {};
-syscall_func_t __g_syscall = {};
-
-uint8_t *__g_heap = {};
-uint64_t __g_heap_size = {};
-uint8_t *__g_heap_cursor = {};
+extern void *file;
+extern size_t file_size;
+extern struct bfelf_file_t *ef;
 
 // -----------------------------------------------------------------------------
-// Main Functions
+// Helper Functions
 // -----------------------------------------------------------------------------
 
-WEAK_SYM int
-main(int argc, const char *argv[])
+#include <cerrno>
+#include <cstdlib>
+#include <unistd.h>
+
+void
+platform_syscall_write(bfsyscall_write_args *args)
 {
-    bfignored(argc);
-    bfignored(argv);
+    switch(args->fd) {
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
+            errno = 0;
+            args->ret = write(args->fd, args->buf, args->nbyte);
+            args->error = errno;
+            return;
 
-    return -1;
+        default:
+            return;
+    }
 }
 
-// -----------------------------------------------------------------------------
-// Original Stack Pointer Helpers
-// -----------------------------------------------------------------------------
+void
+platform_syscall(uint64_t id, void *args)
+{
+    switch(id) {
+        case BFSYSCALL_WRITE:
+            return platform_syscall_write(
+                static_cast<bfsyscall_write_args *>(args));
 
-extern "C" void
-_set_original_sp(uint64_t sp)
-{ thread_context_ptr(__tc_tocs())->original_sp = sp; }
-
-extern "C" uint64_t
-_get_original_sp(void)
-{ return thread_context_ptr(__tc_tocs())->original_sp; }
+        default:
+            return;
+    }
+}
 
 // -----------------------------------------------------------------------------
 // Implementation
 // -----------------------------------------------------------------------------
 
-extern "C" status_t
-_start_c(const _start_args_t *info) noexcept
+int main(int argc, const char *argv[])
 {
-    using init_t = void (*)();
-
-    __g_eh_frame = {
-        reinterpret_cast<void *>(info->eh_frame_addr),
-        info->eh_frame_size
+    struct _start_args_t args = {
+        .exec = file,
+        .syscall = platform_syscall
     };
 
-    __g_heap = static_cast<uint8_t *>(info->heap);
-    __g_heap_size = info->heap_size;
-    __g_heap_cursor = static_cast<uint8_t *>(info->heap);
-    __g_syscall = info->syscall;
-
-    std::ios_base::Init mInitializer;
-
-    if (auto funcs = reinterpret_cast<init_t *>(info->init_array_addr)) {
-        auto n = info->init_array_size >> 3;
-        for (auto i = 0U; i < n; i++) {
-            funcs[i]();
-        }
+    if (mprotect(file, file_size, PROT_READ|PROT_WRITE|PROT_EXEC) != 0) {
+        return BFFAILURE;
     }
 
-    exit(main(info->argc, info->argv));
-
-    // Only needed for debugging
-    return EXIT_FAILURE;
+    return bfexecs(ef, &args);
 }

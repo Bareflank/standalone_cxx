@@ -119,7 +119,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
      */
     struct _start_args_t args = {
         .alloc = platform_alloc,
-        .syscall_func = platform_syscall
+        .syscall = platform_syscall
     };
 
     /*
