@@ -27,6 +27,16 @@ pool:
 
 steps:
 - script: |
-    cmake ..; make -j2
-    make quick
+    mkdir working
+    mkdir working/build
+    mkdir working/prefix
+    mkdir working/cache
+
+    git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
+    cd working/build
+
+    cmake ../standalone_cxx
+    make -j2
+
+    make quick  
   displayName: 'Run integration tests'
