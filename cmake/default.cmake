@@ -47,12 +47,6 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# Depends Directory
-# ------------------------------------------------------------------------------
-
-set(DEPENDS_DIR ${CMAKE_BINARY_DIR}/depends CACHE INTERNAL "" FORCE)
-
-# ------------------------------------------------------------------------------
 # Prefix Directory
 # ------------------------------------------------------------------------------
 
@@ -63,6 +57,22 @@ if(EXISTS ${DEFAULT_PREFIX_DIR})
 else()
     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/prefix CACHE INTERNAL "" FORCE)
 endif()
+
+# ------------------------------------------------------------------------------
+# Depends Directory
+# ------------------------------------------------------------------------------
+
+set(DEPENDS_DIR ${CMAKE_BINARY_DIR}/depends CACHE INTERNAL "" FORCE)
+
+# ------------------------------------------------------------------------------
+# Toolchain File
+# ------------------------------------------------------------------------------
+
+if(NOT CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/toolchain/intel_x86_64.cmake)
+endif()
+
+include(${CMAKE_TOOLCHAIN_FILE})
 
 # ------------------------------------------------------------------------------
 # Definitions

@@ -20,9 +20,10 @@
 # SOFTWARE.
 
 set(CMAKE_SYSTEM_NAME Linux)
+set(TARGET x86_64-elf CACHE INTERNAL "" FORCE)
 
 # ------------------------------------------------------------------------------
-# Prefix
+# Quirks
 # ------------------------------------------------------------------------------
 
 if(CMAKE_INSTALL_PREFIX)
@@ -31,48 +32,38 @@ else()
     set(CMAKE_INSTALL_PREFIX "$ENV{CMAKE_INSTALL_PREFIX}")
 endif()
 
-if(NOT CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/prefix CACHE INTERNAL "" FORCE)
-endif()
-
-# ------------------------------------------------------------------------------
-# Target
-# ------------------------------------------------------------------------------
-
-if(TARGET)
-    set(ENV{TARGET} "${TARGET}")
+if(CLANG_BIN)
+    set(ENV{CLANG_BIN} "${CLANG_BIN}")
 else()
-    set(TARGET "$ENV{TARGET}")
+    set(CLANG_BIN "$ENV{CLANG_BIN}")
 endif()
 
-if(NOT TARGET)
-    set(TARGET x86_64-elf CACHE INTERNAL "" FORCE)
+if(LD_BIN)
+    set(ENV{LD_BIN} "${LD_BIN}")
+else()
+    set(LD_BIN "$ENV{LD_BIN}")
 endif()
 
 # ------------------------------------------------------------------------------
 # Binaries
 # ------------------------------------------------------------------------------
 
-if(NOT DEFINED ENV{CLANG_BIN})
-    find_program(CLANG_BIN clang)
+if(NOT CLANG_BIN)
+    unset(CMAKE_C_COMPILER)
+    find_program(CMAKE_C_COMPILER clang)
+    unset(CMAKE_CXX_COMPILER)
+    find_program(CMAKE_CXX_COMPILER clang)
 else()
-    set(CLANG_BIN $ENV{CLANG_BIN})
-endif()
-
-if(CLANG_BIN)
     set(CMAKE_C_COMPILER ${CLANG_BIN})
-    set(CMAKE_C_COMPILER_WORKS 1)
     set(CMAKE_CXX_COMPILER ${CLANG_BIN})
-    set(CMAKE_CXX_COMPILER_WORKS 1)
-else()
-    message(FATAL_ERROR "Unable to find clang")
 endif()
 
-if(DEFINED ENV{LD_BIN})
-    set(LD_BIN $ENV{LD_BIN})
-else()
+if(NOT LD_BIN)
     set(LD_BIN ${CMAKE_INSTALL_PREFIX}/bin/ld)
 endif()
+
+set(CMAKE_C_COMPILER_WORKS 1)
+set(CMAKE_CXX_COMPILER_WORKS 1)
 
 # ------------------------------------------------------------------------------
 # Flags

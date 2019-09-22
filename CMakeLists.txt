@@ -20,11 +20,6 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.13)
-
-if(NOT CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/cmake/toolchain/intel_x86_64.cmake)
-endif()
-
 project(standalone_cxx NONE)
 
 # ------------------------------------------------------------------------------
@@ -40,7 +35,8 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/macros.cmake)
 
 message(STATUS "Prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Cache: ${CACHE_DIR}")
-message(STATUS "Target: ${TARGET}")
+message(STATUS "Clang: ${CLANG_BIN}")
+message(STATUS "LD: ${LD_BIN}")
 message(STATUS "Toolchain: ${CMAKE_TOOLCHAIN_FILE}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Heap Size: ${HEAP_SIZE}")
@@ -65,6 +61,11 @@ string(CONCAT CMAKE_FLAGS
     # we have to provide our own stack, which means that it can be overrun.
     # If this occurs, this and our canaries can warn the user of the issue.
     "-fstack-protector-strong "
+
+    # Since we define linking ourselves, we do not support the use of clang
+    # without the "-c" option, which tells clang to compile without linking.
+    # Attempting to link would use the wrong ld.
+    "-c "
 
     # This is a bug in clang. For some reason, clang does not define __ELF__,
     # even though the target type ends in ELF. It will only define ELF if it
@@ -104,6 +105,11 @@ string(CONCAT CMAKE_FLAGS
     # this code will create its own stack, which can be defined by CMake so
     # that downstream projects can redefine this as needed.
     "-DBFSTACK_SIZE=${STACK_SIZE} "
+
+    # Tne following is used to turn on/off testing. When testing is turned on,
+    # not only does this add the unit tests to the code, it also adds defines
+    # to the code to cause things like VIRTUAL to work differently.
+    "-DBUILD_TESTING=${BUILD_TESTING}"
 )
 
 if(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")

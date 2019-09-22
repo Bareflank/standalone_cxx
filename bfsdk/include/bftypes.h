@@ -85,7 +85,7 @@
 /* Testing                                                                    */
 /* -------------------------------------------------------------------------- */
 
-#ifdef ENABLE_BUILD_TEST
+#ifdef BUILD_TESTING
 #define VIRTUAL virtual
 #define CONSTEXPR virtual
 #define INLINE virtual
@@ -105,26 +105,24 @@
 /* Userspace                                                                  */
 /* -------------------------------------------------------------------------- */
 
-#if !defined(KERNEL)
+#if !defined(__KERNEL__)
 #include <stddef.h>
 #include <stdint.h>
-#include <inttypes.h>
 #endif
 
 /* -------------------------------------------------------------------------- */
 /* Linux Types                                                                */
 /* -------------------------------------------------------------------------- */
 
-#if defined(KERNEL) && defined(__linux__)
+#if defined(__KERNEL__) && defined(__linux__)
 #include <linux/types.h>
-#define PRId64 "lld"
 #endif
 
 /* -------------------------------------------------------------------------- */
 /* Windows Types                                                              */
 /* -------------------------------------------------------------------------- */
 
-#if defined(_WIN32)
+#if defined(__KERNEL__) && defined(_WIN32)
 #include <basetsd.h>
 typedef INT8 int8_t;
 typedef INT16 int16_t;
@@ -136,17 +134,15 @@ typedef UINT32 uint32_t;
 typedef UINT64 uint64_t;
 typedef UINT_PTR uintptr_t;
 typedef INT_PTR intptr_t;
-#define PRId64 "lld"
 #endif
 
 /* -------------------------------------------------------------------------- */
 /* EFI Types                                                                  */
 /* -------------------------------------------------------------------------- */
 
-#if defined(KERNEL) && defined(EFI)
-#include "efi.h"
-#include "efilib.h"
-#define PRId64 "lld"
+#if defined(__KERNEL__) && defined(EFI)
+#include <stddef.h>
+#include <stdint.h>
 #endif
 
 /* -------------------------------------------------------------------------- */

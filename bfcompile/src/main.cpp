@@ -36,7 +36,6 @@ int main(int argc, char *argv[])
 
     if (argc != 4) {
         throw std::runtime_error("wrong number of arguments");
-        exit(1);
     }
 
     if (auto strm = std::ifstream(argv[1], std::fstream::binary)) {

@@ -76,7 +76,7 @@ list(APPEND NEWLIB_CONFIGURE_FLAGS
     # This tells newlib where to fine some binaries that it will need to
     # compile. Since we rely on clang, we do not need target specific versions
     # of these tools so we just use the versions that the host system has
-    CC_FOR_TARGET=${CLANG_BIN}
+    CC_FOR_TARGET=${CMAKE_C_COMPILER}
     AR_FOR_TARGET=ar
     AS_FOR_TARGET=as
     NM_FOR_TARGET=nm

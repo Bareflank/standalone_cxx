@@ -26,6 +26,6 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(standalone_cxx_sdk)
 
 add_executable(bfcompile src/main.cpp)
-target_link_libraries(bfcompile PRIVATE standalone_cxx_sdk)
+target_link_libraries(bfcompile PRIVATE standalone_cxx_sdk stdc++fs)
 
 install(TARGETS bfcompile DESTINATION bin)

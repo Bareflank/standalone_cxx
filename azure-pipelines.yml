@@ -23,28 +23,278 @@ trigger:
 - master
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-16.04'
 
-steps:
-- script: |
+jobs:
+- job: Clang_7
+  steps:
+  - checkout: none
+  - script: |
 
-    sudo apt-get install git build-essential clang #cmake
+      CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
+      mkdir custom_cmake
+      wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
+      export PATH=$(pwd)/custom_cmake/bin:${PATH}
 
-    CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
-    mkdir custom_cmake
-    wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
-    export PATH=$(pwd)/custom_cmake/bin:${PATH}
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main"
 
-    mkdir working
-    mkdir working/build
-    mkdir working/prefix
-    mkdir working/cache
+      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 
-    git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
-    cd working/build
+      sudo apt-get update
+      sudo apt-get install -y gcc-8 g++-8 clang-7
 
-    cmake ../standalone_cxx
-    make -j2
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 100
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 100
 
-    make quick
-  displayName: 'Run integration tests'
+      mkdir working
+      mkdir working/build
+      mkdir working/prefix
+      mkdir working/cache
+
+      git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
+      cd working/build
+
+      cmake ../standalone_cxx -DCLANG_BIN=clang-7
+      make
+
+    displayName: 'Build'
+  - script: |
+      cd working/build
+      make quick
+    displayName: 'Test'
+
+
+
+- job: Clang_8
+  steps:
+  - checkout: none
+  - script: |
+
+      CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
+      mkdir custom_cmake
+      wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
+      export PATH=$(pwd)/custom_cmake/bin:${PATH}
+
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
+
+      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+
+      sudo apt-get update
+      sudo apt-get install -y gcc-8 g++-8 clang-8
+
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 100
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 100
+
+      mkdir working
+      mkdir working/build
+      mkdir working/prefix
+      mkdir working/cache
+
+      git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
+      cd working/build
+
+      cmake ../standalone_cxx -DCLANG_BIN=clang-8
+      make
+
+    displayName: 'Build'
+  - script: |
+      cd working/build
+      make quick
+    displayName: 'Test'
+
+
+
+- job: Clang_9
+  steps:
+  - checkout: none
+  - script: |
+
+      CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
+      mkdir custom_cmake
+      wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
+      export PATH=$(pwd)/custom_cmake/bin:${PATH}
+
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+
+      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+
+      sudo apt-get update
+      sudo apt-get install -y gcc-8 g++-8 clang-9
+
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 100
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 100
+
+      mkdir working
+      mkdir working/build
+      mkdir working/prefix
+      mkdir working/cache
+
+      git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
+      cd working/build
+
+      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      make
+
+    displayName: 'Build'
+  - script: |
+      cd working/build
+      make quick
+    displayName: 'Test'
+
+
+
+- job: GCC_8
+  steps:
+  - checkout: none
+  - script: |
+
+      CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
+      mkdir custom_cmake
+      wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
+      export PATH=$(pwd)/custom_cmake/bin:${PATH}
+
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+
+      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+
+      sudo apt-get update
+      sudo apt-get install -y gcc-8 g++-8 clang-9
+
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 100
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 100
+
+      mkdir working
+      mkdir working/build
+      mkdir working/prefix
+      mkdir working/cache
+
+      git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
+      cd working/build
+
+      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      make
+
+    displayName: 'Build'
+  - script: |
+      cd working/build
+      make quick
+    displayName: 'Test'
+
+
+
+- job: GCC_9
+  steps:
+  - checkout: none
+  - script: |
+
+      CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
+      mkdir custom_cmake
+      wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
+      export PATH=$(pwd)/custom_cmake/bin:${PATH}
+
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+
+      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+
+      sudo apt-get update
+      sudo apt-get install -y gcc-9 g++-9 clang-9
+
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 100
+
+      mkdir working
+      mkdir working/build
+      mkdir working/prefix
+      mkdir working/cache
+
+      git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
+      cd working/build
+
+      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      make
+
+    displayName: 'Build'
+  - script: |
+      cd working/build
+      make quick
+    displayName: 'Test'
+
+
+
+- job: Examples
+  steps:
+  - checkout: none
+  - script: |
+
+      CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
+      mkdir custom_cmake
+      wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
+      export PATH=$(pwd)/custom_cmake/bin:${PATH}
+
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main"
+
+      sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+
+      sudo apt-get update
+      sudo apt-get install -y gcc-9 g++-9 clang-9
+
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100
+      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 100
+
+      mkdir working
+      mkdir working/build
+      mkdir working/prefix
+      mkdir working/cache
+
+      git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
+      cd working/build
+
+      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      make
+
+    displayName: 'Build'
+  - script: |
+      cd working/build
+      make test_bfexec_with_custom_heap_size
+      make test_bfexec
+      make test_bfexecs_no_include_allocations
+      make test_bfexecs_with_custom_heap_size
+      make test_bfexecs_with_custom_heap
+      make test_bfexecs_with_manual_allocations
+      make test_bfexecs
+      make test_bfexecv_no_optional
+      make test_bfexecv_with_custom_heap_size
+      make test_bfexecv
+      make test_empty
+      make test_hello_bareflank
+      make test_hello_world_printf
+      make test_hello_world
+    displayName: 'Test'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

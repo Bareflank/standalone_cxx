@@ -22,6 +22,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(uefi_app C ASM)
 
+message(STATUS "Toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+
 find_package(standalone_cxx_sdk)
 
 add_library(uefi_app SHARED main.c incbin.S)

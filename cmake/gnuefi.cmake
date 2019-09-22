@@ -30,10 +30,10 @@ download_dependency(
 add_dependency(
     gnuefi
     CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E copy_directory ${CACHE_DIR}/gnuefi ${DEPENDS_DIR}/gnuefi/build
-    BUILD_COMMAND       make
-    COMMAND             make -C lib
-    COMMAND             make -C gnuefi
-    INSTALL_COMMAND     make PREFIX=${CMAKE_INSTALL_PREFIX} install
-    COMMAND             make PREFIX=${CMAKE_INSTALL_PREFIX} -C lib install
-    COMMAND             make PREFIX=${CMAKE_INSTALL_PREFIX} -C gnuefi install
+    BUILD_COMMAND       make -C ${DEPENDS_DIR}/gnuefi/build
+    COMMAND             make -C ${DEPENDS_DIR}/gnuefi/build/lib
+    COMMAND             make -C ${DEPENDS_DIR}/gnuefi/build/gnuefi
+    INSTALL_COMMAND     make PREFIX=${CMAKE_INSTALL_PREFIX} -C ${DEPENDS_DIR}/gnuefi/build install
+    COMMAND             make PREFIX=${CMAKE_INSTALL_PREFIX} -C ${DEPENDS_DIR}/gnuefi/build/lib install
+    COMMAND             make PREFIX=${CMAKE_INSTALL_PREFIX} -C ${DEPENDS_DIR}/gnuefi/build/gnuefi install
 )
