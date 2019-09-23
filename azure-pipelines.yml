@@ -30,7 +30,6 @@ jobs:
   steps:
   - checkout: none
   - script: |
-
       CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
       mkdir custom_cmake
       wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
@@ -57,8 +56,8 @@ jobs:
 
       cmake ../standalone_cxx -DCLANG_BIN=clang-7
       make
-
     displayName: 'Build'
+
   - script: |
       cd working/build
       make quick
@@ -70,7 +69,6 @@ jobs:
   steps:
   - checkout: none
   - script: |
-
       CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
       mkdir custom_cmake
       wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
@@ -97,8 +95,8 @@ jobs:
 
       cmake ../standalone_cxx -DCLANG_BIN=clang-8
       make
-
     displayName: 'Build'
+
   - script: |
       cd working/build
       make quick
@@ -110,7 +108,6 @@ jobs:
   steps:
   - checkout: none
   - script: |
-
       CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
       mkdir custom_cmake
       wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
@@ -137,8 +134,8 @@ jobs:
 
       cmake ../standalone_cxx -DCLANG_BIN=clang-9
       make
-
     displayName: 'Build'
+
   - script: |
       cd working/build
       make quick
@@ -150,7 +147,6 @@ jobs:
   steps:
   - checkout: none
   - script: |
-
       CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
       mkdir custom_cmake
       wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
@@ -177,8 +173,8 @@ jobs:
 
       cmake ../standalone_cxx -DCLANG_BIN=clang-9
       make
-
     displayName: 'Build'
+
   - script: |
       cd working/build
       make quick
@@ -190,7 +186,6 @@ jobs:
   steps:
   - checkout: none
   - script: |
-
       CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
       mkdir custom_cmake
       wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
@@ -217,8 +212,8 @@ jobs:
 
       cmake ../standalone_cxx -DCLANG_BIN=clang-9
       make
-
     displayName: 'Build'
+
   - script: |
       cd working/build
       make quick
@@ -230,7 +225,6 @@ jobs:
   steps:
   - checkout: none
   - script: |
-
       CMAKE_URL="http://www.cmake.org/files/v3.13/cmake-3.13.4-Linux-x86_64.tar.gz"
       mkdir custom_cmake
       wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C custom_cmake
@@ -257,8 +251,8 @@ jobs:
 
       cmake ../standalone_cxx -DCLANG_BIN=clang-9
       make
-
     displayName: 'Build'
+
   - script: |
       cd working/build
       make test_bfexec_with_custom_heap_size
@@ -276,25 +270,3 @@ jobs:
       make test_hello_world_printf
       make test_hello_world
     displayName: 'Test'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
