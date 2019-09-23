@@ -1,5 +1,9 @@
 <img src="https://i.postimg.cc/qRM8QQqp/Standalonec-Reduced.png" alt="logo" height="300" />
 
+[![Build Status](https://dev.azure.com/bareflank/standalone_cxx/_apis/build/status/Bareflank.standalone_cxx?branchName=master)](https://dev.azure.com/bareflank/standalone_cxx/_build/latest?definitionId=1&branchName=master)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/325/badge)](https://bestpractices.coreinfrastructure.org/projects/325)
+[![Join the chat at https://gitter.im/Bareflank-hypervisor/Lobby](https://badges.gitter.im/Bareflank-hypervisor/Lobby.svg)](https://gitter.im/Bareflank-hypervisor/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ## Description
 
 Standalone C++ is an open source, freestanding implementation of C++ led by Assured Information Security, Inc. (AIS),
