@@ -12,6 +12,21 @@ the C++ APIs are limited to the freestanding specification, this projects
 provides the ability to standup a full C++ environment when "-ffreestanding"
 is required.
 
+## Demo
+
+Check out the latest demo for how to compile and use Standalone C++:
+
+TBD
+
+## Additional Videos
+
+Checkout our [YouTube Channel](https://www.youtube.com/channel/UCH-7Pw96K5V1RHAPn5-cmYA) for more great content as well as
+the following videos at [CppCon](https://www.youtube.com/user/CppCon) below:
+
+[![CppCon 2019](https://i.imgur.com/hjZg0pf.png)](https://www.youtube.com/watch?v=bKPN-CGhEC0)
+[![CppCon 2017](https://i.imgur.com/nBFD6uA.png)](https://www.youtube.com/watch?v=KdJhQuycD78)
+[![CppCon 2016](https://i.imgur.com/fwmlOiJ.png)](https://www.youtube.com/watch?v=uQSQy-7lveQ)
+
 ## Dependencies:
 
 To compile Standalone C++, you must first install the following on your system (depending on your OS)
