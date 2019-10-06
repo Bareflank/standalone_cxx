@@ -26,177 +26,9 @@ project(standalone_cxx NONE)
 # Initial Setup
 # ------------------------------------------------------------------------------
 
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/default.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/macros.cmake)
-
-# ------------------------------------------------------------------------------
-# Status
-# ------------------------------------------------------------------------------
-
-message(STATUS "Prefix: ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "Cache: ${CACHE_DIR}")
-message(STATUS "Clang: ${CLANG_BIN}")
-message(STATUS "LD: ${LD_BIN}")
-message(STATUS "Toolchain: ${CMAKE_TOOLCHAIN_FILE}")
-message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Heap Size: ${HEAP_SIZE}")
-message(STATUS "Stack Size: ${STACK_SIZE}")
-
-# ------------------------------------------------------------------------------
-# Compiler Flags
-# ------------------------------------------------------------------------------
-
-string(CONCAT CMAKE_FLAGS
-    # By default, a compiler's sysroot is hardcoded when the compiler is
-    # compiled itself. Since this is a freestanding environment, we must
-    # explicitly tell the compiler where our custom sysroot is.
-    "--sysroot=${CMAKE_INSTALL_PREFIX} "
-
-    # Tell the compiler that this is a freestanding environment. This ensures
-    # that none of the includes from the host system are used, possibly
-    # corrupting the build environment.
-    "-ffreestanding "
-
-    # This provides additional protections on the stack which is useful as
-    # we have to provide our own stack, which means that it can be overrun.
-    # If this occurs, this and our canaries can warn the user of the issue.
-    "-fstack-protector-strong "
-
-    # Since we define linking ourselves, we do not support the use of clang
-    # without the "-c" option, which tells clang to compile without linking.
-    # Attempting to link would use the wrong ld.
-    "-c "
-
-    # This is a bug in clang. For some reason, clang does not define __ELF__,
-    # even though the target type ends in ELF. It will only define ELF if it
-    # recognizes the operating system portion of the target.
-    "-D__ELF__ "
-
-    # For some reason, Libc++ relies on non-standard C functions, so this is
-    # needed to ensure these functions are enabled in Newlib so that Libc++
-    # can get access to them. We also use gnu instead of std for this reason
-    # as we don't want __STRICT_ANSI__ either.
-    "-D_GNU_SOURCE "
-
-    # Ensure that we state which POSIX features we support. Normally this is
-    # stored in newlib's features.h, but we don't want to patch newlib, so
-    # we place this here instead.
-    "-D_POSIX_TIMERS "
-    "-D_POSIX_THREADS "
-    "-D_UNIX98_THREAD_MUTEX_ATTRIBUTES "
-
-    # This is needed due to newlib not supporting long double, which libc++
-    # requires. When we turn this on, newlib will provide the missing functions
-    # by forwarding them to the double version, which works for now.
-    "-D_LDBL_EQ_DBL "
-
-    # This is needed by libc++ as it attempts to detect the OS to determine
-    # how the clock is handled, and once it cannot find the OS, since there
-    # isn't one, it pukes.
-    "-DCLOCK_MONOTONIC "
-
-    # The following defines the heap size that we use. C++ needs a heap for
-    # new/delete and malloc/free. To keep things simple, we define a static
-    # heap size. If you need a heap that can grow as needed, reimplement the
-    # sbrk() function using a custom syscall.
-    "-DBFHEAP_SIZE=${HEAP_SIZE} "
-
-    # The following defines the stack size that we use. The entry point for
-    # this code will create its own stack, which can be defined by CMake so
-    # that downstream projects can redefine this as needed.
-    "-DBFSTACK_SIZE=${STACK_SIZE} "
-
-    # Tne following is used to turn on/off testing. When testing is turned on,
-    # not only does this add the unit tests to the code, it also adds defines
-    # to the code to cause things like VIRTUAL to work differently.
-    "-DBUILD_TESTING=${BUILD_TESTING}"
-)
-
-if(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
-    string(CONCAT CMAKE_FLAGS
-        "${CMAKE_FLAGS} "
-
-        # The following tells the compiler to make sections for all data and
-        # functions. Once this is done, the linker can then use these sections
-        # to remove code that is not used, reducing overall size.
-        "-fdata-sections "
-        "-ffunction-sections "
-    )
-endif()
-
-string(CONCAT CMAKE_C_FLAGS
-    "${CMAKE_FLAGS} "
-    "${CMAKE_TARGET_C_FLAGS} "
-
-    # Ensure we are compiling with C11 and not the default. Note that we
-    # replace "c" with "gnu" which ensures that we do not accidentially
-    # define __STRICT_ANSI__ which libc++ does not like.
-    "-std=gnu11 "
-)
-
-string(CONCAT CMAKE_CXX_FLAGS
-    "${CMAKE_FLAGS} "
-    "${CMAKE_TARGET_CXX_FLAGS} "
-
-    # Ensure we are compiling with C11 and not the default. Note that we
-    # replace "c" with "gnu" which ensures that we do not accidentially
-    # define __STRICT_ANSI__ which libc++ does not like.
-    "-std=gnu++17 "
-)
-
-# ------------------------------------------------------------------------------
-# Linker Flags
-# ------------------------------------------------------------------------------
-
-string(CONCAT CMAKE_LINK_FLAGS
-    # By default, a linkers's sysroot is hardcoded when the linker is
-    # compiled itself. Since this is a freestanding environment, we must
-    # explicitly tell the linker where our custom sysroot is.
-    "--sysroot=${CMAKE_INSTALL_PREFIX} "
-
-    # We only support static pie compilation which means that the result
-    # application will be self contained and relocatable. Since shared
-    # libraries are not supported, a dynamic linker is not needed as well.
-    "-static "
-    "-pie "
-    "--no-dynamic-linker "
-
-    # Tell the linker that this is a freestanding environment. This ensures
-    # that none of the libraries from the host system are used, possibly
-    # corrupting the resulting executable.
-    "-nostdlib "
-)
-
-if(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
-    string(CONCAT CMAKE_LINK_FLAGS
-        "${CMAKE_LINK_FLAGS} "
-
-        # The following tells the linker to remove code that is not being used
-        # by the application. Note that this only works because we compiled the
-        # code using data and function sections.
-        "--gc-sections "
-        "--strip-all "
-    )
-endif()
-
-string(CONCAT CMAKE_C_LINK_FLAGS
-    "${CMAKE_LINK_FLAGS} "
-)
-
-string(CONCAT CMAKE_CXX_LINK_FLAGS
-    "${CMAKE_LINK_FLAGS} "
-)
-
-# ------------------------------------------------------------------------------
-# Targets
-# ------------------------------------------------------------------------------
-
-add_custom_target(
-    clean-all
-    COMMAND ${CMAKE_COMMAND} --build . --target clean
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${DEPENDS_DIR}
-    USES_TERMINAL
-)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/config.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/target.cmake)
 
 # ------------------------------------------------------------------------------
 # Interface Library
@@ -208,47 +40,49 @@ setup_interfaces()
 # Dependencies
 # ------------------------------------------------------------------------------
 
-include_dependency(gnuefi)
 include_dependency(binutils)
 include_dependency(newlib)
 include_dependency(llvm)
 include_dependency(libcxxabi)
 include_dependency(libcxx)
+include_dependency(gnuefi)
 include_dependency(catch2)
 
-add_subproject(bfsdk ${CMAKE_CURRENT_LIST_DIR}/bfsdk DEPENDS libcxx)
-add_subproject(bfruntime ${CMAKE_CURRENT_LIST_DIR}/bfruntime DEPENDS bfsdk)
-add_subproject(bfunwind ${CMAKE_CURRENT_LIST_DIR}/bfunwind DEPENDS bfsdk)
-add_subproject(bfelf_loader ${CMAKE_CURRENT_LIST_DIR}/bfelf_loader DEPENDS bfsdk)
-
 # ------------------------------------------------------------------------------
-# bfcompile
+# Sub Projects
 # ------------------------------------------------------------------------------
 
-list(APPEND BFCOMPILE_CXX_ARGN
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-    CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
-    CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
-    CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
+add_subproject(
+    bfsdk           host
+    SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfsdk
 )
 
-if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
-    list(APPEND BFCOMPILE_CXX_ARGN
-        CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
-    )
-endif()
+add_subproject(
+    bfelf_loader    host
+    SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfelf_loader
+)
 
-ExternalProject_Add (
-    bfcompile
-    ${BFCOMPILE_CXX_ARGN}
-    DEPENDS             bfsdk bfelf_loader
-    PREFIX              ${CMAKE_BINARY_DIR}/bfcompile/loader
-    STAMP_DIR           ${CMAKE_BINARY_DIR}/bfcompile/loader/stamp
-    TMP_DIR             ${CMAKE_BINARY_DIR}/bfcompile/loader/tmp
-    BINARY_DIR          ${CMAKE_BINARY_DIR}/bfcompile/loader/build
-    LOG_DIR             ${CMAKE_BINARY_DIR}/bfcompile/loader/logs
-    SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/bfcompile
-    UPDATE_COMMAND      cmake -E echo -- Checking for changes
+add_subproject(
+    bfsdk           target
+    SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfsdk
+)
+
+add_subproject(
+    bfruntime       target
+    SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfruntime
+    DEPENDS         libcxx_target bfsdk_target
+)
+
+add_subproject(
+    bfunwind        target
+    SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfunwind
+    DEPENDS         libcxx_target bfsdk_target
+)
+
+add_subproject(
+    bfcompile       host
+    SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfcompile
+    DEPENDS         bfsdk_host bfelf_loader_host
 )
 
 # ------------------------------------------------------------------------------

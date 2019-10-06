@@ -32,22 +32,22 @@ message(STATUS "Including dependency: libcxx")
 
 download_dependency(
     libcxx
-    ${LIBCXX_URL}
-    ${LIBCXX_URL_MD5}
+    ${BAREFLANK_LIBCXX_URL}
+    ${BAREFLANK_LIBCXX_URL_MD5}
 )
 
-list(APPEND LIBCXX_CONFIGURE_FLAGS
+list(APPEND BAREFLANK_LIBCXX_CONFIGURE_FLAGS
     # Tell Libc++ where LLVM and Libc++abi is located. This is needed because
     # libc++ is supposed to be compiled in tree, which we do not do here to
     # save time, so we have to state these manually.
-    -DLLVM_PATH=${CACHE_DIR}/llvm
+    -DLLVM_PATH=${BAREFLANK_CACHE_DIR}/llvm
     -DLIBCXX_CXX_ABI=libcxxabi
-    -DLIBCXX_CXX_ABI_INCLUDE_PATHS=${CACHE_DIR}/libcxxabi/include
+    -DLIBCXX_CXX_ABI_INCLUDE_PATHS=${BAREFLANK_CACHE_DIR}/libcxxabi/include
 
     # Tell CMake where the sysroot is. This not only tells CMake where to
     # install the resulting libraries, it also tells CMake where the include
     # files are.
-    -DLIBCXX_SYSROOT=${CMAKE_INSTALL_PREFIX}
+    -DLIBCXX_SYSROOT=${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}
 
     # We only support static compilation with standalone c++. As a result, we
     # turn off shared library support and enable static library support.
@@ -69,7 +69,7 @@ list(APPEND LIBCXX_CONFIGURE_FLAGS
 )
 
 add_dependency(
-    libcxx
-    CMAKE_ARGS  ${LIBCXX_CONFIGURE_FLAGS}
-    DEPENDS     libcxxabi
+    libcxx      target
+    CMAKE_ARGS  ${BAREFLANK_LIBCXX_CONFIGURE_FLAGS}
+    DEPENDS     libcxxabi_target
 )

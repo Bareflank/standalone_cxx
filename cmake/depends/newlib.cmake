@@ -43,20 +43,20 @@ message(STATUS "Including dependency: newlib")
 
 download_dependency(
     newlib
-    ${NEWLIB_URL}
-    ${NEWLIB_URL_MD5}
+    ${BAREFLANK_NEWLIB_URL}
+    ${BAREFLANK_NEWLIB_URL_MD5}
 )
 
-list(APPEND NEWLIB_CONFIGURE_FLAGS
+list(APPEND BAREFLANK_NEWLIB_CONFIGURE_FLAGS
     # Tell newlib which target we are building for. In general, this step is
     # only needed because this will run on cygwin, and it ensures that we get
     # a library that outputs in ELF.
-    --target=${TARGET}
+    --target=${BAREFLANK_TARGET}
 
     # This tells the compiler where to put the resulting libraries.
     # Note that we will have to modify the results of this as newlib will
     # place the contents in a target folder which we do not want.
-    --prefix=${CMAKE_INSTALL_PREFIX}
+    --prefix=${BAREFLANK_PREFIX_DIR}/tmp
 
     # We do not need libgloss as libgloss is the second half of newlib that
     # adds OS support to newlib. Since we are in a standalone environment,
@@ -71,12 +71,12 @@ list(APPEND NEWLIB_CONFIGURE_FLAGS
     # Tell newlib what our flags are. Note that this comes from the toolchain
     # file as well as the superbuild CMakeLists.txt and should not be changed
     # as we want the flags to be consistent between all of the libraries.
-    CFLAGS_FOR_TARGET=${CMAKE_C_FLAGS}
+    CFLAGS_FOR_TARGET=${BAREFLANK_TARGET_CLANG_C_FLAGS}
 
     # This tells newlib where to fine some binaries that it will need to
     # compile. Since we rely on clang, we do not need target specific versions
     # of these tools so we just use the versions that the host system has
-    CC_FOR_TARGET=${CMAKE_C_COMPILER}
+    CC_FOR_TARGET=${BAREFLANK_CLANG_BIN}
     AR_FOR_TARGET=ar
     AS_FOR_TARGET=as
     NM_FOR_TARGET=nm
@@ -88,16 +88,16 @@ list(APPEND NEWLIB_CONFIGURE_FLAGS
 )
 
 add_dependency(
-    newlib
-    CONFIGURE_COMMAND   ${CACHE_DIR}/newlib/configure ${NEWLIB_CONFIGURE_FLAGS}
-    BUILD_COMMAND       make -j${HOST_NUMBER_CORES}
+    newlib              target
+    CONFIGURE_COMMAND   ${BAREFLANK_CACHE_DIR}/newlib/configure ${BAREFLANK_NEWLIB_CONFIGURE_FLAGS}
+    BUILD_COMMAND       make -j${BAREFLANK_HOST_NUMBER_CORES}
     INSTALL_COMMAND     make install
-    DEPENDS             binutils
+    DEPENDS             binutils_host
 )
 
 add_dependency_step(
-    newlib
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_INSTALL_PREFIX}/${TARGET}/lib ${CMAKE_INSTALL_PREFIX}/lib
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_INSTALL_PREFIX}/${TARGET}/include ${CMAKE_INSTALL_PREFIX}/include
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/${TARGET}
+    newlib      target
+    COMMAND     ${CMAKE_COMMAND} -E copy_directory ${BAREFLANK_PREFIX_DIR}/tmp/${BAREFLANK_TARGET}/lib ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib
+    COMMAND     ${CMAKE_COMMAND} -E copy_directory ${BAREFLANK_PREFIX_DIR}/tmp/${BAREFLANK_TARGET}/include ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/include
+    COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/tmp
 )

@@ -118,11 +118,12 @@ As shown above, you start with defining your CMake minimum version, as well as t
 
 Once you have your source and build scripts complete, you can compile your application using the following:
 ```cmake
-cmake -DCMAKE_TOOLCHAIN_FILE=<path> -CMAKE_INSTALL_PREFIX=<path> .
+cmake -CMAKE_INSTALL_PREFIX=<path> -DCMAKE_TOOLCHAIN_FILE=<prefix_path/CMakeToolchain.cmake> .
 make -j<# cores>
 ```
 
-The toolchain file is needed because the C++ application will technically be cross-compiled (although the target archiecture is likely the same). This provides us with the ability to define how the C++ application is compiled using clang, something the interface library feature in CMake currently doesn't support. Supported toolchains can be found [here](https://github.com/Bareflank/standalone_cxx/tree/master/cmake/toolchain), but you can always write your own as well.
+The toolchain file is needed because the C++ application will technically be cross-compiled (although the target architecture is likely the same). This provides us with the ability to define how the C++ application is compiled using clang, something the interface library feature in CMake currently doesn't support. The prefix is also needed as we cannot set the prefix from the
+toolchain, which means both are needed.
 
 ### The Loader
 

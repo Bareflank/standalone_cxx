@@ -19,39 +19,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
+message(STATUS "Including dependency: catch2")
 
-    message(STATUS "Including dependency: catch2")
+download_dependency(
+    catch2
+    ${BAREFLANK_CATCH2_URL}
+    ${BAREFLANK_CATCH2_URL_MD5}
+)
 
-    download_dependency(
-        catch2
-        ${CATCH2_URL}
-        ${CATCH2_URL_MD5}
-    )
+list(APPEND BAREFLANK_CATCH2_CONFIGURE_FLAGS
+    -DCATCH_BUILD_TESTING=OFF
+)
 
-    list(APPEND CATCH2_CONFIGURE_FLAGS
-        -DCATCH_BUILD_TESTING=OFF
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-        -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
-        -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
-        -DCMAKE_BUILD_TYPE=Debug
-    )
+add_dependency(
+    catch2      host
+    CMAKE_ARGS  ${BAREFLANK_CATCH2_CONFIGURE_FLAGS}
+)
 
-    if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
-        list(APPEND CATCH2_CONFIGURE_FLAGS
-            -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
-        )
-    endif()
-
-    ExternalProject_Add(
-        catch2
-        CMAKE_ARGS  ${CATCH2_CONFIGURE_FLAGS}
-        PREFIX      ${DEPENDS_DIR}/catch2
-        STAMP_DIR   ${DEPENDS_DIR}/catch2/stamp
-        TMP_DIR     ${DEPENDS_DIR}/catch2/tmp
-        BINARY_DIR  ${DEPENDS_DIR}/catch2/build
-        LOG_DIR     ${DEPENDS_DIR}/catch2/logs
-        SOURCE_DIR  ${CACHE_DIR}/catch2
-    )
-
-endif()
+add_dependency_step(
+    catch2      host
+    COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/lib64
+    COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/share
+)

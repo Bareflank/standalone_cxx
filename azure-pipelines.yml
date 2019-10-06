@@ -54,7 +54,7 @@ jobs:
       git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
       cd working/build
 
-      cmake ../standalone_cxx -DCLANG_BIN=clang-7
+      cmake ../standalone_cxx -DBAREFLANK_CLANG_BIN=clang-7
       make
     displayName: 'Build'
 
@@ -93,7 +93,7 @@ jobs:
       git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
       cd working/build
 
-      cmake ../standalone_cxx -DCLANG_BIN=clang-8
+      cmake ../standalone_cxx -DBAREFLANK_CLANG_BIN=clang-8
       make
     displayName: 'Build'
 
@@ -132,7 +132,7 @@ jobs:
       git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
       cd working/build
 
-      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      cmake ../standalone_cxx -DBAREFLANK_CLANG_BIN=clang-9
       make
     displayName: 'Build'
 
@@ -171,7 +171,7 @@ jobs:
       git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
       cd working/build
 
-      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      cmake ../standalone_cxx -DBAREFLANK_CLANG_BIN=clang-9
       make
     displayName: 'Build'
 
@@ -210,7 +210,7 @@ jobs:
       git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
       cd working/build
 
-      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      cmake ../standalone_cxx -DBAREFLANK_CLANG_BIN=clang-9
       make
     displayName: 'Build'
 
@@ -249,7 +249,7 @@ jobs:
       git clone https://github.com/Bareflank/standalone_cxx.git working/standalone_cxx
       cd working/build
 
-      cmake ../standalone_cxx -DCLANG_BIN=clang-9
+      cmake ../standalone_cxx -DBAREFLANK_CLANG_BIN=clang-9
       make
     displayName: 'Build'
 

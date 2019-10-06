@@ -20,92 +20,89 @@
 # SOFTWARE.
 
 set(CMAKE_SYSTEM_NAME Linux)
-set(TARGET x86_64-elf CACHE INTERNAL "" FORCE)
+set(BAREFLANK_TARGET x86_64-elf CACHE INTERNAL "" FORCE)
 
 # ------------------------------------------------------------------------------
-# Quirks
+# Compiler Flags
 # ------------------------------------------------------------------------------
 
-if(CMAKE_INSTALL_PREFIX)
-    set(ENV{CMAKE_INSTALL_PREFIX} "${CMAKE_INSTALL_PREFIX}")
-else()
-    set(CMAKE_INSTALL_PREFIX "$ENV{CMAKE_INSTALL_PREFIX}")
-endif()
-
-if(CLANG_BIN)
-    set(ENV{CLANG_BIN} "${CLANG_BIN}")
-else()
-    set(CLANG_BIN "$ENV{CLANG_BIN}")
-endif()
-
-if(LD_BIN)
-    set(ENV{LD_BIN} "${LD_BIN}")
-else()
-    set(LD_BIN "$ENV{LD_BIN}")
-endif()
-
-# ------------------------------------------------------------------------------
-# Binaries
-# ------------------------------------------------------------------------------
-
-if(NOT CLANG_BIN)
-    unset(CMAKE_C_COMPILER)
-    find_program(CMAKE_C_COMPILER clang)
-    unset(CMAKE_CXX_COMPILER)
-    find_program(CMAKE_CXX_COMPILER clang)
-else()
-    set(CMAKE_C_COMPILER ${CLANG_BIN})
-    set(CMAKE_CXX_COMPILER ${CLANG_BIN})
-endif()
-
-if(NOT LD_BIN)
-    set(LD_BIN ${CMAKE_INSTALL_PREFIX}/bin/ld)
-endif()
-
-set(CMAKE_C_COMPILER_WORKS 1)
-set(CMAKE_CXX_COMPILER_WORKS 1)
-
-# ------------------------------------------------------------------------------
-# Flags
-# ------------------------------------------------------------------------------
-
-string(CONCAT CMAKE_TARGET_C_FLAGS
-    # We define the target here as this is a clang specific feature, and all
-    # compiler specific features should be in the toolchain file so that other
-    # compilers can be used as well if needed.
-    "--target=${TARGET} "
-
-    # Intel 64bit requires the use of -fpic as all libraries and executables
-    # are compiled as position independent. It is up to the linker to determine
-    # if the resulting executable is located at a specific address.
-    "-fpic "
-
-    # There really is no need to support CPUs older than Core2 as 64bit support
-    # was really not a thing until Core2 anyways. On some compilers, this
-    # might not even be needed.
+string(CONCAT BAREFLANK_TARGET_CLANG_FLAGS
+    "--target=${BAREFLANK_TARGET} "
+    "--sysroot=${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET} "
+    "-isystem ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/include/c++/v1 "
+    "-isystem ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/include "
+    "-isystem ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/include/bfsdk "
+    "-c "
+    "-fPIC "
+    "-ffreestanding "
+    "-fstack-protector-strong "
     "-march=core2 "
+    "-Wno-constant-conversion "
+    "-D__ELF__ "
+    "-D_GNU_SOURCE "
+    "-D_POSIX_TIMERS "
+    "-D_POSIX_THREADS "
+    "-D_UNIX98_THREAD_MUTEX_ATTRIBUTES "
+    "-D_LDBL_EQ_DBL "
+    "-DCLOCK_MONOTONIC "
+    "-DBFHEAP_SIZE=${BAREFLANK_HEAP_SIZE} "
+    "-DBFSTACK_SIZE=${BAREFLANK_STACK_SIZE} "
 )
 
-string(CONCAT CMAKE_TARGET_CXX_FLAGS
-    # We define the target here as this is a clang specific feature, and all
-    # compiler specific features should be in the toolchain file so that other
-    # compilers can be used as well if needed.
-    "--target=${TARGET} "
+if(${BAREFLANK_TARGET_BUILD_TYPE} MATCHES "MinSizeRel")
+    string(CONCAT BAREFLANK_TARGET_CLANG_FLAGS
+        "-Os "
+        "-DNDEBUG "
+        "${BAREFLANK_TARGET_CLANG_FLAGS}"
+    )
+elseif(${BAREFLANK_TARGET_BUILD_TYPE} MATCHES "Release")
+    string(CONCAT BAREFLANK_TARGET_CLANG_FLAGS
+        "-O2 "
+        "-DNDEBUG "
+        "${BAREFLANK_TARGET_CLANG_FLAGS}"
+    )
+elseif(${BAREFLANK_TARGET_BUILD_TYPE} MATCHES "Debug")
+    string(CONCAT BAREFLANK_TARGET_CLANG_FLAGS
+        "-g "
+        "${BAREFLANK_TARGET_CLANG_FLAGS}"
+    )
+endif()
 
-    # We define the c++ flag here as this is a clang specific feature, and all
-    # compiler specific features should be in the toolchain file so that other
-    # compilers can be used as well if needed.
+string(CONCAT BAREFLANK_TARGET_CLANG_C_FLAGS
+    "-std=gnu11 "
+    "${BAREFLANK_TARGET_C_FLAGS}"
+    "${BAREFLANK_TARGET_CLANG_FLAGS}"
+)
+
+string(CONCAT BAREFLANK_TARGET_CLANG_CXX_FLAGS
     "-x c++ "
+    "-std=gnu++17 "
+    "${BAREFLANK_TARGET_CXX_FLAGS}"
+    "${BAREFLANK_TARGET_CLANG_FLAGS}"
+)
 
-    # Intel 64bit requires the use of -fpic as all libraries and executables
-    # are compiled as position independent. It is up to the linker to determine
-    # if the resulting executable is located at a specific address.
-    "-fpic "
+# ------------------------------------------------------------------------------
+# Linker Flags
+# ------------------------------------------------------------------------------
 
-    # There really is no need to support CPUs older than Core2 as 64bit support
-    # was really not a thing until Core2 anyways. On some compilers, this
-    # might not even be needed.
-    "-march=core2 "
+string(CONCAT BAREFLANK_TARGET_LD_FLAGS
+    "--sysroot=${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET} "
+    "-static "
+    "-pie "
+    "--no-dynamic-linker "
+    "-nostdlib "
+    "-z max-page-size=0x1000 "
+    "-z noexecstack "
+)
+
+string(CONCAT BAREFLANK_TARGET_LD_C_FLAGS
+    "${BAREFLANK_TARGET_LINK_FLAGS}"
+    "${BAREFLANK_TARGET_LD_FLAGS}"
+)
+
+string(CONCAT BAREFLANK_TARGET_LD_CXX_FLAGS
+    "${BAREFLANK_TARGET_LINK_FLAGS}"
+    "${BAREFLANK_TARGET_LD_FLAGS}"
 )
 
 # ------------------------------------------------------------------------------
@@ -120,10 +117,28 @@ set(CMAKE_CXX_ARCHIVE_CREATE
     "ar qc <TARGET> <OBJECTS>"
 )
 
+set(CMAKE_C_COMPILE_OBJECT
+    "${BAREFLANK_CLANG_BIN} ${BAREFLANK_TARGET_CLANG_C_FLAGS} <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE>"
+)
+
+set(CMAKE_CXX_COMPILE_OBJECT
+    "${BAREFLANK_CLANG_BIN} ${BAREFLANK_TARGET_CLANG_CXX_FLAGS} <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE>"
+)
+
 set(CMAKE_C_LINK_EXECUTABLE
-    "${LD_BIN} <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES> -z max-page-size=0x1000 -z noexecstack"
+    "${BAREFLANK_LD_BIN} ${BAREFLANK_TARGET_LD_C_FLAGS} <CMAKE_C_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
 )
 
 set(CMAKE_CXX_LINK_EXECUTABLE
-    "${LD_BIN} <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES> -z max-page-size=0x1000 -z noexecstack"
+    "${BAREFLANK_LD_BIN} ${BAREFLANK_TARGET_LD_CXX_FLAGS} <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
 )
+
+# ------------------------------------------------------------------------------
+# Skip Compiler Checks
+# ------------------------------------------------------------------------------
+
+set(CMAKE_C_COMPILER ${BAREFLANK_CLANG_BIN})
+set(CMAKE_CXX_COMPILER ${BAREFLANK_CLANG_BIN})
+
+set(CMAKE_C_COMPILER_WORKS 1)
+set(CMAKE_CXX_COMPILER_WORKS 1)

@@ -19,21 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-message(STATUS "Including dependency: gnuefi")
+message(STATUS "Including dependency: llvm")
 
 download_dependency(
-    gnuefi
-    ${GNUEFI_URL}
-    ${GNUEFI_URL_MD5}
-)
-
-add_dependency(
-    gnuefi
-    CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E copy_directory ${CACHE_DIR}/gnuefi ${DEPENDS_DIR}/gnuefi/build
-    BUILD_COMMAND       make -C ${DEPENDS_DIR}/gnuefi/build
-    COMMAND             make -C ${DEPENDS_DIR}/gnuefi/build/lib
-    COMMAND             make -C ${DEPENDS_DIR}/gnuefi/build/gnuefi
-    INSTALL_COMMAND     make PREFIX=${CMAKE_INSTALL_PREFIX} -C ${DEPENDS_DIR}/gnuefi/build install
-    COMMAND             make PREFIX=${CMAKE_INSTALL_PREFIX} -C ${DEPENDS_DIR}/gnuefi/build/lib install
-    COMMAND             make PREFIX=${CMAKE_INSTALL_PREFIX} -C ${DEPENDS_DIR}/gnuefi/build/gnuefi install
+    llvm
+    ${BAREFLANK_LLVM_URL}
+    ${BAREFLANK_LLVM_URL_MD5}
 )

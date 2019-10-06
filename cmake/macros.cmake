@@ -26,7 +26,7 @@ include(ExternalProject)
 # ------------------------------------------------------------------------------
 
 macro(include_dependency NAME)
-    include(${CMAKE_CURRENT_LIST_DIR}/cmake/${NAME}.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/cmake/depends/${NAME}.cmake)
 endmacro(include_dependency)
 
 # ------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ endmacro(include_dependency)
 # ------------------------------------------------------------------------------
 
 # Downloads a dependency from a URL. Dependencies can either be
-# a tarball or a zip file. These downloaded files are placed in the CACHE_DIR.
+# a tarball or a zip file. These downloaded files are placed in the BAREFLANK_CACHE_DIR.
 # If the provided MD5 hash does not match, the cached download is redownloaded.
 #
 # @param NAME the name of the dependency
@@ -42,7 +42,7 @@ endmacro(include_dependency)
 # @param URL_MD5 The MD5 of the file being downloaded
 #
 function(download_dependency NAME URL URL_MD5)
-    set(SRC ${CACHE_DIR}/${NAME})
+    set(SRC ${BAREFLANK_CACHE_DIR}/${NAME})
 
     string(REGEX REPLACE "\\.[^.]*$" "" FILENAME ${URL})
     string(REPLACE "${FILENAME}" "" EXT ${URL})
@@ -63,8 +63,8 @@ function(download_dependency NAME URL URL_MD5)
         set(EXT ".tar.bz2")
     endif()
 
-    set(TMP ${CACHE_DIR}/${NAME}_tmp)
-    set(TAR ${CACHE_DIR}/${NAME}${EXT})
+    set(TMP ${BAREFLANK_CACHE_DIR}/${NAME}_tmp)
+    set(TAR ${BAREFLANK_CACHE_DIR}/${NAME}${EXT})
 
     message(STATUS "    file location: ${TAR}")
 
@@ -151,35 +151,36 @@ endfunction(download_dependency)
 # ExternalProject_Add's options are supported by this function.
 #
 # @param NAME the name of the dependency
+# @param PREFIX the prefix to install the dependency
 #
-function(add_dependency NAME)
-
-    string(CONCAT CMAKE_C_FLAGS
-        "${CMAKE_C_FLAGS} -w "
-        "-isystem ${CMAKE_INSTALL_PREFIX}/include "
-    )
-
-    string(CONCAT CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -w "
-        "-isystem ${CMAKE_INSTALL_PREFIX}/include "
-    )
-
-    if(EXISTS "${CACHE_DIR}/${NAME}/CMakeLists.txt")
-        list(APPEND ARGN
-            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-            CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-            CMAKE_ARGS -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-            CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-            CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
-            CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
-            CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            CMAKE_ARGS -DCLANG_BIN=${CLANG_BIN}
-            CMAKE_ARGS -DLD_BIN=${LD_BIN}
-        )
-        if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+function(add_dependency NAME PREFIX)
+    if(EXISTS "${BAREFLANK_CACHE_DIR}/${NAME}/CMakeLists.txt")
+        if(PREFIX MATCHES "target")
             list(APPEND ARGN
-                CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+                CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}
             )
+        else()
+            list(APPEND ARGN
+                CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${BAREFLANK_PREFIX_DIR}/host
+            )
+        endif()
+
+        if(PREFIX MATCHES "target")
+            list(APPEND ARGN
+                CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${BAREFLANK_TOOLCHAIN_FILE}
+            )
+        else()
+            list(APPEND ARGN
+                CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
+                CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+                CMAKE_ARGS -DCMAKE_BUILD_TYPE=${BAREFLANK_HOST_BUILD_TYPE}
+            )
+
+            if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+                list(APPEND ARGN
+                    CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+                )
+            endif()
         endif()
     elseif(NOT CMAKE_VERBOSE_MAKEFILE)
         list(APPEND ARGN
@@ -190,20 +191,21 @@ function(add_dependency NAME)
     endif()
 
     ExternalProject_Add(
-        ${NAME}
+        ${NAME}_${PREFIX}
         ${ARGN}
-        PREFIX              ${DEPENDS_DIR}/${NAME}
-        STAMP_DIR           ${DEPENDS_DIR}/${NAME}/stamp
-        TMP_DIR             ${DEPENDS_DIR}/${NAME}/tmp
-        BINARY_DIR          ${DEPENDS_DIR}/${NAME}/build
-        LOG_DIR             ${DEPENDS_DIR}/${NAME}/logs
-        SOURCE_DIR          ${CACHE_DIR}/${NAME}
+        PREFIX              ${BAREFLANK_DEPENDS_DIR}/${NAME}_${PREFIX}
+        STAMP_DIR           ${BAREFLANK_DEPENDS_DIR}/${NAME}_${PREFIX}/stamp
+        TMP_DIR             ${BAREFLANK_DEPENDS_DIR}/${NAME}_${PREFIX}/tmp
+        BINARY_DIR          ${BAREFLANK_DEPENDS_DIR}/${NAME}_${PREFIX}/build
+        LOG_DIR             ${BAREFLANK_DEPENDS_DIR}/${NAME}_${PREFIX}/logs
+        SOURCE_DIR          ${BAREFLANK_CACHE_DIR}/${NAME}
+        DEPENDS             ${DEPENDS}
     )
 
     ExternalProject_Add_Step(
-        ${NAME}
-        ${NAME}_cleanup
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${DEPENDS_DIR}/${NAME}/src
+        ${NAME}_${PREFIX}
+        ${NAME}_${PREFIX}_cleanup
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_DEPENDS_DIR}/${NAME}_${PREFIX}/src
         DEPENDEES configure
     )
 endfunction(add_dependency)
@@ -215,11 +217,12 @@ endfunction(add_dependency)
 # supported.
 #
 # @param NAME the name of the dependency
+# @param PREFIX the prefix to install the dependency
 #
-function(add_dependency_step NAME)
+function(add_dependency_step NAME PREFIX)
     ExternalProject_Add_Step(
-        ${NAME}
-        step_${NAME}
+        ${NAME}_${PREFIX}
+        step_${NAME}_${PREFIX}
         ${ARGN}
         DEPENDEES install
     )
@@ -234,44 +237,56 @@ endfunction(add_dependency_step)
 # ExternalProject_Add's options are supported by this function.
 #
 # @param NAME the name of the subproject
-# @param SOURCE the location of the subproject
+# @param PREFIX the prefix to install the subproject
 #
-function(add_subproject NAME SOURCE)
-    string(CONCAT CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} "
-        "-isystem ${CMAKE_INSTALL_PREFIX}/include/c++/v1 "
-        "-isystem ${CMAKE_INSTALL_PREFIX}/include "
-        "-isystem ${CMAKE_INSTALL_PREFIX}/include/bfsdk "
-        "-isystem ${CMAKE_INSTALL_PREFIX}/include/bfelf_loader "
-    )
-
-    list(APPEND ARGN
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-        CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-        CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-        CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
-        CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
-        CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        CMAKE_ARGS -DCLANG_BIN=${CLANG_BIN}
-        CMAKE_ARGS -DLD_BIN=${LD_BIN}
-    )
-
-    if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+function(add_subproject NAME PREFIX)
+    if(PREFIX MATCHES "target")
         list(APPEND ARGN
-            CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}
+        )
+    else()
+        list(APPEND ARGN
+            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${BAREFLANK_PREFIX_DIR}/host
         )
     endif()
 
+    if(PREFIX MATCHES "target")
+        if(NOT NAME MATCHES "uefi")
+            list(APPEND ARGN
+                CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${BAREFLANK_TOOLCHAIN_FILE}
+            )
+        endif()
+    else()
+        list(APPEND ARGN
+            CMAKE_ARGS -DCMAKE_INSTALL_MESSAGE=${CMAKE_INSTALL_MESSAGE}
+            CMAKE_ARGS -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+            CMAKE_ARGS -DCMAKE_BUILD_TYPE=${BAREFLANK_HOST_BUILD_TYPE}
+        )
+
+        if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+            list(APPEND ARGN
+                CMAKE_ARGS -DCMAKE_TARGET_MESSAGES=${CMAKE_TARGET_MESSAGES}
+            )
+        endif()
+    endif()
+
     ExternalProject_Add(
-        ${NAME}
+        ${NAME}_${PREFIX}
         ${ARGN}
-        PREFIX              ${DEPENDS_DIR}/${NAME}
-        STAMP_DIR           ${DEPENDS_DIR}/${NAME}/stamp
-        TMP_DIR             ${DEPENDS_DIR}/${NAME}/tmp
-        BINARY_DIR          ${DEPENDS_DIR}/${NAME}/build
-        LOG_DIR             ${DEPENDS_DIR}/${NAME}/logs
-        SOURCE_DIR          ${SOURCE}
+        PREFIX              ${BAREFLANK_SUBPROJECT_DIR}/${NAME}_${PREFIX}
+        STAMP_DIR           ${BAREFLANK_SUBPROJECT_DIR}/${NAME}_${PREFIX}/stamp
+        TMP_DIR             ${BAREFLANK_SUBPROJECT_DIR}/${NAME}_${PREFIX}/tmp
+        BINARY_DIR          ${BAREFLANK_SUBPROJECT_DIR}/${NAME}_${PREFIX}/build
+        LOG_DIR             ${BAREFLANK_SUBPROJECT_DIR}/${NAME}_${PREFIX}/logs
         UPDATE_COMMAND      cmake -E echo -- Checking for changes
+        DEPENDS             ${DEPENDS}
+    )
+
+    ExternalProject_Add_Step(
+        ${NAME}_${PREFIX}
+        ${NAME}_${PREFIX}_cleanup
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_SUBPROJECT_DIR}/${NAME}_${PREFIX}/src
+        DEPENDEES configure
     )
 endfunction(add_subproject)
 
@@ -288,49 +303,29 @@ function(setup_interfaces)
     add_library(standalone_cxx INTERFACE)
     add_library(standalone_cxx_sdk INTERFACE)
 
-    string(REPLACE " " ";" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    string(REPLACE " " ";" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
-
-    target_compile_options(standalone_cxx INTERFACE
-        ${CMAKE_CXX_FLAGS}
-    )
-
-    target_link_options(standalone_cxx INTERFACE
-        ${CMAKE_CXX_LINK_FLAGS}
-        -L${CMAKE_INSTALL_PREFIX}/lib
-        -lbfruntime
-    )
-
-    target_include_directories(standalone_cxx INTERFACE
-        ${CMAKE_INSTALL_PREFIX}/include/c++/v1
-        ${CMAKE_INSTALL_PREFIX}/include/
-        ${CMAKE_INSTALL_PREFIX}/include/bfsdk
-        ${CMAKE_INSTALL_PREFIX}/include/bfelf_loader
+    target_link_libraries(standalone_cxx INTERFACE
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libc++.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libc++abi.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libbfunwind.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libc.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libm.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libbfruntime.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libc++.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libc++abi.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libbfunwind.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libc.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libm.a
+        ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libbfruntime.a
     )
 
     target_include_directories(standalone_cxx_sdk INTERFACE
-        ${CMAKE_INSTALL_PREFIX}/include/bfsdk
-        ${CMAKE_INSTALL_PREFIX}/include/bfelf_loader
-    )
-
-    target_link_libraries(standalone_cxx INTERFACE
-        ${CMAKE_INSTALL_PREFIX}/lib/libc++.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libc++abi.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfunwind.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libc.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libm.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfruntime.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libc++.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libc++abi.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfunwind.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libc.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libm.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libbfruntime.a
+        ${BAREFLANK_PREFIX_DIR}/host/include/bfsdk
+        ${BAREFLANK_PREFIX_DIR}/host/include/bfelf_loader
     )
 
     target_compile_definitions(standalone_cxx_sdk INTERFACE
-        BFHEAP_SIZE=${HEAP_SIZE}
-        BFSTACK_SIZE=${STACK_SIZE}
+        BFHEAP_SIZE=${BAREFLANK_HEAP_SIZE}
+        BFSTACK_SIZE=${BAREFLANK_STACK_SIZE}
     )
 
     export(TARGETS standalone_cxx FILE standalone_cxxConfig.cmake APPEND)
@@ -339,3 +334,52 @@ function(setup_interfaces)
     export(TARGETS standalone_cxx_sdk FILE standalone_cxx_sdkConfig.cmake APPEND)
     export(PACKAGE standalone_cxx_sdk)
 endfunction(setup_interfaces)
+
+# ------------------------------------------------------------------------------
+# generate_toolchain
+# ------------------------------------------------------------------------------
+
+function(append_if_exists TOOLCHAIN_OUTPUT VAR)
+    if(${VAR})
+        file(APPEND ${TOOLCHAIN_OUTPUT} "set(${VAR} \"${${VAR}} \")\n")
+    endif()
+endfunction(append_if_exists)
+
+
+# Generates a toolchain file based on an input toolchain file that contains
+# a bunch of Bareflank specific definitions that a project might need. This
+# ensures all of the settings that were used to create the standalone C++
+# libraries are also applied to anything that uses the libraries, something
+# that a package cannot currently support from a toolchain.
+#
+# @param TOOLCHAIN_INPUT the input toolchain
+# @param TOOLCHAIN_OUTPUT the output toolchain
+#
+function(generate_toolchain TOOLCHAIN_INPUT TOOLCHAIN_OUTPUT)
+    file(REMOVE ${TOOLCHAIN_OUTPUT})
+    file(APPEND ${TOOLCHAIN_OUTPUT} "# --- Auto Generated ---\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(CMAKE_INSTALL_MESSAGE ${CMAKE_INSTALL_MESSAGE})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(CMAKE_VERBOSE_MAKEFILE ${CMAKE_VERBOSE_MAKEFILE})\n")
+
+    if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+        file(APPEND ${TOOLCHAIN_OUTPUT} "set(CMAKE_TARGET_MESSAGES ${CMAKE_TARGET_MESSAGES})\n")
+    endif()
+
+    append_if_exists(${TOOLCHAIN_OUTPUT} BAREFLANK_TARGET_C_FLAGS)
+    append_if_exists(${TOOLCHAIN_OUTPUT} BAREFLANK_TARGET_CXX_FLAGS)
+    append_if_exists(${TOOLCHAIN_OUTPUT} BAREFLANK_TARGET_LINK_FLAGS)
+
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_CACHE_DIR ${BAREFLANK_CACHE_DIR})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_PREFIX_DIR ${BAREFLANK_PREFIX_DIR})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_DEPENDS_DIR ${BAREFLANK_DEPENDS_DIR})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_TARGET_BUILD_TYPE ${BAREFLANK_TARGET_BUILD_TYPE})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_CLANG_BIN ${BAREFLANK_CLANG_BIN})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_LD_BIN ${BAREFLANK_LD_BIN})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_HEAP_SIZE ${BAREFLANK_HEAP_SIZE})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_STACK_SIZE ${BAREFLANK_STACK_SIZE})\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "# --- Auto Generated ---\n")
+    file(APPEND ${TOOLCHAIN_OUTPUT} "\n")
+
+    file(READ ${TOOLCHAIN_INPUT} INPUT_CONTENTS)
+    file(APPEND ${TOOLCHAIN_OUTPUT} "${INPUT_CONTENTS}")
+endfunction(generate_toolchain)

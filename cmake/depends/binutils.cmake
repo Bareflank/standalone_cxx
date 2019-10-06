@@ -40,20 +40,20 @@ message(STATUS "Including dependency: binutils")
 
 download_dependency(
     binutils
-    ${BINUTILS_URL}
-    ${BINUTILS_URL_MD5}
+    ${BAREFLANK_BINUTILS_URL}
+    ${BAREFLANK_BINUTILS_URL_MD5}
 )
 
-list(APPEND BINUTILS_CONFIGURE_FLAGS
+list(APPEND BAREFLANK_BINUTILS_CONFIGURE_FLAGS
     # Tell binutils which target we are building for. In general, this step is
     # only needed because this will run on cygwin, and it ensures that we get
     # a linker that outputs ELF.
-    --target=${TARGET}
+    --target=${BAREFLANK_TARGET}
 
     # This tells the compiler where to put the resulting binutils binaries.
     # Note that we will have to modify the results of this as binutils will
     # place the contents in a target folder which we do not want.
-    --prefix=${CMAKE_INSTALL_PREFIX}
+    --prefix=${BAREFLANK_PREFIX_DIR}/tmp/
 
     # This ensures that the linker is compiled with sysroot support. On some
     # systems (like Fedora) this is not the case which is why our own binutils
@@ -67,15 +67,14 @@ list(APPEND BINUTILS_CONFIGURE_FLAGS
 )
 
 add_dependency(
-    binutils
-    CONFIGURE_COMMAND   ${CACHE_DIR}/binutils/configure ${BINUTILS_CONFIGURE_FLAGS}
-    BUILD_COMMAND       make -j${HOST_NUMBER_CORES}
+    binutils            host
+    CONFIGURE_COMMAND   ${BAREFLANK_CACHE_DIR}/binutils/configure ${BAREFLANK_BINUTILS_CONFIGURE_FLAGS}
+    BUILD_COMMAND       make -j${BAREFLANK_HOST_NUMBER_CORES}
     INSTALL_COMMAND     make install
 )
 
 add_dependency_step(
-    binutils
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/share
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_INSTALL_PREFIX}/${TARGET}/bin ${CMAKE_INSTALL_PREFIX}/bin
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/${TARGET}
+    binutils    host
+    COMMAND     ${CMAKE_COMMAND} -E copy ${BAREFLANK_PREFIX_DIR}/tmp/${BAREFLANK_TARGET}/bin/ld ${BAREFLANK_PREFIX_DIR}/host/bin/ld
+    COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/tmp/
 )

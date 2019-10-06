@@ -28,15 +28,6 @@ function(compile_test_case name)
     add_executable(${name} ${name}.cpp)
     target_link_libraries(${name} PRIVATE standalone_cxx)
     install(TARGETS ${name} DESTINATION bin)
-
-    add_custom_command(
-        TARGET ${name}
-        POST_BUILD
-        COMMAND ${CMAKE_INSTALL_PREFIX}/bin/bfcompile ${CMAKE_BINARY_DIR}/${name} ${CMAKE_INSTALL_PREFIX}/bin/${name}.bin ${CMAKE_INSTALL_PREFIX}/bin/${name}_ef.bin
-        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_SOURCE_DIR}/../loader/incbin.S
-        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_SOURCE_DIR}/../uefi/incbin.S
-    )
-
 endfunction(compile_test_case)
 
 compile_test_case(empty)

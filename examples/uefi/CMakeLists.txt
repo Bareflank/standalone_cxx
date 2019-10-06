@@ -22,14 +22,35 @@
 cmake_minimum_required(VERSION 3.13)
 project(uefi_app C ASM)
 
-message(STATUS "Toolchain: ${CMAKE_TOOLCHAIN_FILE}")
-
 find_package(standalone_cxx_sdk)
 
-add_library(uefi_app SHARED main.c incbin.S)
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
+
+file(COPY ${CMAKE_CURRENT_LIST_DIR}/incbin.S DESTINATION ${CMAKE_BINARY_DIR})
+
+add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/test.bin
+    COMMAND ${BAREFLANK_BFCOMPILE} ${BAREFLANK_TESTS_BIN} ${CMAKE_BINARY_DIR}/test.bin ${CMAKE_BINARY_DIR}/test_ef.bin
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/incbin.S
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/incbin.S ${CMAKE_BINARY_DIR}/incbin.S
+    DEPENDS ${BAREFLANK_TESTS_BIN}
+)
+
+add_custom_target(
+    hello_bareflank
+    DEPENDS ${CMAKE_BINARY_DIR}/test.bin
+)
+
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
+
+add_library(uefi_app SHARED main.c ${CMAKE_BINARY_DIR}/incbin.S)
 target_link_libraries(uefi_app PRIVATE standalone_cxx_sdk)
-target_compile_definitions(uefi_app PRIVATE FILENAME="${CXX_FILE_PATH}")
-target_compile_definitions(uefi_app PRIVATE EF_FILENAME="${CXX_EF_FILE_PATH}")
+target_compile_definitions(uefi_app PRIVATE FILENAME="${CMAKE_BINARY_DIR}/test.bin")
+target_compile_definitions(uefi_app PRIVATE EF_FILENAME="${CMAKE_BINARY_DIR}/test_ef.bin")
+add_dependencies(uefi_app hello_bareflank)
 
 add_custom_command(
     TARGET uefi_app
