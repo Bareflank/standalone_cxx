@@ -6,7 +6,7 @@
 
 ## Description
 
-Standalone C++ is an open source, freestanding implementation of C++ led by Assured Information Security, Inc. (AIS),
+Standalone C++ is an open source, implementation of C++ led by Assured Information Security, Inc. (AIS),
 that leverages Libc++ from the LLVM project. This project provides the ability to run C++ from anywhere, even in environments that do not support C++ including UEFI, IoT, Automotive, Embedded Systems, Hypervisor, Unikernels, Windows/Linux kernel modules or any other freestanding environment (where -ffreestanding is enabled). Unlike a traditional freestanding environment where
 the C++ APIs are limited to the freestanding specification, this projects
 provides the ability to standup a full C++ environment when "-ffreestanding"
