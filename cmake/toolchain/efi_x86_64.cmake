@@ -20,7 +20,10 @@
 # SOFTWARE.
 
 set(CMAKE_SYSTEM_NAME Linux)
-set(BAREFLANK_TARGET x86_64-elf CACHE INTERNAL "" FORCE)
+
+if(NOT BAREFLANK_TARGET)
+    set(BAREFLANK_TARGET x86_64-elf CACHE INTERNAL "" FORCE)
+endif()
 
 # ------------------------------------------------------------------------------
 # Compiler Flags

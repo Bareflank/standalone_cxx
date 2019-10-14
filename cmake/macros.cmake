@@ -319,6 +319,7 @@ function(setup_interfaces)
     )
 
     target_include_directories(standalone_cxx_sdk INTERFACE
+        ${BAREFLANK_PREFIX_DIR}/host/include/
         ${BAREFLANK_PREFIX_DIR}/host/include/bfsdk
         ${BAREFLANK_PREFIX_DIR}/host/include/bfelf_loader
     )
@@ -326,6 +327,10 @@ function(setup_interfaces)
     target_compile_definitions(standalone_cxx_sdk INTERFACE
         BFHEAP_SIZE=${BAREFLANK_HEAP_SIZE}
         BFSTACK_SIZE=${BAREFLANK_STACK_SIZE}
+    )
+
+    target_compile_options(standalone_cxx_sdk INTERFACE
+       ${BAREFLANK_HOST_CXX_FLAGS}
     )
 
     export(TARGETS standalone_cxx FILE standalone_cxxConfig.cmake APPEND)
@@ -368,6 +373,10 @@ function(generate_toolchain TOOLCHAIN_INPUT TOOLCHAIN_OUTPUT)
     append_if_exists(${TOOLCHAIN_OUTPUT} BAREFLANK_TARGET_C_FLAGS)
     append_if_exists(${TOOLCHAIN_OUTPUT} BAREFLANK_TARGET_CXX_FLAGS)
     append_if_exists(${TOOLCHAIN_OUTPUT} BAREFLANK_TARGET_LINK_FLAGS)
+
+    if(BAREFLANK_TARGET)
+        file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_TARGET ${BAREFLANK_TARGET})\n")
+    endif()
 
     file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_CACHE_DIR ${BAREFLANK_CACHE_DIR})\n")
     file(APPEND ${TOOLCHAIN_OUTPUT} "set(BAREFLANK_PREFIX_DIR ${BAREFLANK_PREFIX_DIR})\n")

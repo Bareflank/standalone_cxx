@@ -79,17 +79,21 @@ add_subproject(
     DEPENDS         libcxx_target bfsdk_target
 )
 
-add_subproject(
-    bfcompile       host
-    SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfcompile
-    DEPENDS         bfsdk_host bfelf_loader_host
-)
+if(NOT BAREFLANK_NOBFCOMPILE)
+    add_subproject(
+        bfcompile       host
+        SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/bfcompile
+        DEPENDS         bfsdk_host bfelf_loader_host
+    )
+endif()
 
 # ------------------------------------------------------------------------------
 # Examples
 # ------------------------------------------------------------------------------
 
-add_subdirectory(examples)
+if(NOT BAREFLANK_NOEXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 # ------------------------------------------------------------------------------
 # Quiet Install Command

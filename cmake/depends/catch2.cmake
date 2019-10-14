@@ -19,25 +19,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-message(STATUS "Including dependency: catch2")
+if(BAREFLANK_HOST_BUILD_TYPE MATCHES "Debug")
+    message(STATUS "Including dependency: catch2")
 
-download_dependency(
-    catch2
-    ${BAREFLANK_CATCH2_URL}
-    ${BAREFLANK_CATCH2_URL_MD5}
-)
+    download_dependency(
+        catch2
+        ${BAREFLANK_CATCH2_URL}
+        ${BAREFLANK_CATCH2_URL_MD5}
+    )
 
-list(APPEND BAREFLANK_CATCH2_CONFIGURE_FLAGS
-    -DCATCH_BUILD_TESTING=OFF
-)
+    list(APPEND BAREFLANK_CATCH2_CONFIGURE_FLAGS
+        -DCATCH_BUILD_TESTING=OFF
+    )
 
-add_dependency(
-    catch2      host
-    CMAKE_ARGS  ${BAREFLANK_CATCH2_CONFIGURE_FLAGS}
-)
+    add_dependency(
+        catch2      host
+        CMAKE_ARGS  ${BAREFLANK_CATCH2_CONFIGURE_FLAGS}
+    )
 
-add_dependency_step(
-    catch2      host
-    COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/lib64
-    COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/share
-)
+    add_dependency_step(
+        catch2      host
+        COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/lib64
+        COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/share
+    )
+endif()

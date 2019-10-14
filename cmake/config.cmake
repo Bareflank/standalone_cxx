@@ -42,24 +42,28 @@ ProcessorCount(BAREFLANK_HOST_NUMBER_CORES)
 # Cache Directory
 # ------------------------------------------------------------------------------
 
-set(BAREFLANK_DEFAULT_CACHE_DIR ${CMAKE_BINARY_DIR}/../cache)
+if(NOT BAREFLANK_CACHE_DIR)
+    set(BAREFLANK_DEFAULT_CACHE_DIR ${CMAKE_BINARY_DIR}/../cache)
 
-if(EXISTS ${BAREFLANK_DEFAULT_CACHE_DIR})
-    get_filename_component(BAREFLANK_CACHE_DIR "${BAREFLANK_DEFAULT_CACHE_DIR}" ABSOLUTE)
-else()
-    set(BAREFLANK_CACHE_DIR ${CMAKE_BINARY_DIR}/cache)
+    if(EXISTS ${BAREFLANK_DEFAULT_CACHE_DIR})
+        get_filename_component(BAREFLANK_CACHE_DIR "${BAREFLANK_DEFAULT_CACHE_DIR}" ABSOLUTE)
+    else()
+        set(BAREFLANK_CACHE_DIR ${CMAKE_BINARY_DIR}/cache)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
 # Prefix Directory
 # ------------------------------------------------------------------------------
 
-set(BAREFLANK_DEFAULT_PREFIX_DIR ${CMAKE_BINARY_DIR}/../prefix)
+if(NOT BAREFLANK_PREFIX_DIR)
+    set(BAREFLANK_DEFAULT_PREFIX_DIR ${CMAKE_BINARY_DIR}/../prefix)
 
-if(EXISTS ${BAREFLANK_DEFAULT_PREFIX_DIR})
-    get_filename_component(BAREFLANK_PREFIX_DIR "${BAREFLANK_DEFAULT_PREFIX_DIR}" ABSOLUTE)
-else()
-    set(BAREFLANK_PREFIX_DIR ${CMAKE_BINARY_DIR}/prefix)
+    if(EXISTS ${BAREFLANK_DEFAULT_PREFIX_DIR})
+        get_filename_component(BAREFLANK_PREFIX_DIR "${BAREFLANK_DEFAULT_PREFIX_DIR}" ABSOLUTE)
+    else()
+        set(BAREFLANK_PREFIX_DIR ${CMAKE_BINARY_DIR}/prefix)
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------
