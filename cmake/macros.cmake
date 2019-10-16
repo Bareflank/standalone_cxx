@@ -318,6 +318,14 @@ function(setup_interfaces)
         ${BAREFLANK_PREFIX_DIR}/${BAREFLANK_TARGET}/lib/libbfruntime.a
     )
 
+    target_link_directories(standalone_cxx INTERFACE
+        ${BAREFLANK_PREFIX_DIR}/host/lib/
+    )
+
+    target_link_directories(standalone_cxx_sdk INTERFACE
+        ${BAREFLANK_PREFIX_DIR}/host/lib/
+    )
+
     target_include_directories(standalone_cxx_sdk INTERFACE
         ${BAREFLANK_PREFIX_DIR}/host/include/
         ${BAREFLANK_PREFIX_DIR}/host/include/bfsdk

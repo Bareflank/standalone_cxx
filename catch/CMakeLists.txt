@@ -20,11 +20,22 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.13)
-project(bfelf_loader NONE)
+project(catch2_main CXX)
+
+find_package(standalone_cxx_sdk)
+
+# -----------------------------------------------------------------------------
+# source
+# -----------------------------------------------------------------------------
+
+add_library(catch2_main STATIC
+    src/main.cpp
+)
+
+target_link_libraries(catch2_main PRIVATE standalone_cxx_sdk)
 
 # -----------------------------------------------------------------------------
 # installs
 # -----------------------------------------------------------------------------
 
-install(FILES include/bfelf_loader.h DESTINATION include/bfelf_loader)
-install(FILES include/bfelf_loader_private.h DESTINATION include/bfelf_loader)
+install(TARGETS catch2_main DESTINATION lib)

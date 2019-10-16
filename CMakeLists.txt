@@ -87,6 +87,14 @@ if(NOT BAREFLANK_NOBFCOMPILE)
     )
 endif()
 
+if(BAREFLANK_HOST_BUILD_TYPE MATCHES "Debug")
+    add_subproject(
+        catch2_main     host
+        SOURCE_DIR      ${CMAKE_CURRENT_LIST_DIR}/catch
+        DEPENDS         bfsdk_host bfelf_loader_host catch2_host
+    )
+endif()
+
 # ------------------------------------------------------------------------------
 # Examples
 # ------------------------------------------------------------------------------

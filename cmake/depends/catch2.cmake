@@ -42,4 +42,5 @@ if(BAREFLANK_HOST_BUILD_TYPE MATCHES "Debug")
         COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/lib64
         COMMAND     ${CMAKE_COMMAND} -E remove_directory ${BAREFLANK_PREFIX_DIR}/host/share
     )
+
 endif()
