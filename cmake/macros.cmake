@@ -346,6 +346,11 @@ function(setup_interfaces)
 
     export(TARGETS standalone_cxx_sdk FILE standalone_cxx_sdkConfig.cmake APPEND)
     export(PACKAGE standalone_cxx_sdk)
+
+    file(APPEND "${CMAKE_BINARY_DIR}/standalone_cxxConfig.cmake" "# --- Auto Generated ---\n")
+    file(APPEND "${CMAKE_BINARY_DIR}/standalone_cxxConfig.cmake" "set(CMAKE_SKIP_RPATH TRUE)\n")
+    file(APPEND "${CMAKE_BINARY_DIR}/standalone_cxxConfig.cmake" "# --- Auto Generated ---\n")
+    file(APPEND "${CMAKE_BINARY_DIR}/standalone_cxxConfig.cmake" "\n")
 endfunction(setup_interfaces)
 
 # ------------------------------------------------------------------------------
